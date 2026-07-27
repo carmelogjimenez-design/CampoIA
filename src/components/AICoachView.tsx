@@ -31,25 +31,25 @@ export default function AICoachView({ players }: Props) {
     } finally { setBusy(false) }
   }
 
-  const inp = 'w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-campo-violet text-sm'
+  const inp = 'w-full bg-canvas border border-line rounded-xl px-3 py-2 outline-none focus:border-campo-violet text-sm'
 
   return (
     <div>
       <h1 className="font-display font-extrabold text-3xl text-ink mb-1">IA Coach</h1>
-      <p className="text-slate-500 mb-6">Pregunta a la IA sobre el desarrollo de tus jugadores</p>
-      <div className="bg-white rounded-2xl border border-slate-200 p-5 max-w-2xl">
-        <label className="block text-xs font-bold text-slate-600 mb-1">JUGADOR (contexto)</label>
+      <p className="text-sub mb-6">Pregunta a la IA sobre el desarrollo de tus jugadores</p>
+      <div className="bg-white rounded-2xl border border-line p-5 max-w-2xl">
+        <label className="block text-xs font-bold text-sub mb-1">JUGADOR (contexto)</label>
         <select className={inp + ' mb-3'} value={playerId} onChange={e => setPlayerId(e.target.value)}>
           {players.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
         </select>
-        <label className="block text-xs font-bold text-slate-600 mb-1">TU PREGUNTA</label>
+        <label className="block text-xs font-bold text-sub mb-1">TU PREGUNTA</label>
         <textarea className={inp + ' mb-3'} rows={3} value={question} onChange={e => setQuestion(e.target.value)}
                   placeholder="Ej: ¿Qué plan de trabajo recomiendas para mejorar su resistencia?" />
         <button onClick={ask} disabled={busy} className="bg-ink text-white font-semibold rounded-xl px-5 py-2.5 disabled:opacity-60">
           {busy ? 'Pensando…' : 'Preguntar a la IA'}
         </button>
         {error && <div className="bg-red-50 text-red-600 text-sm rounded-xl px-4 py-3 mt-4">{error}</div>}
-        {answer && <div className="bg-slate-50 rounded-xl p-4 mt-4 text-sm text-slate-700 whitespace-pre-wrap">{answer}</div>}
+        {answer && <div className="bg-canvas rounded-xl p-4 mt-4 text-sm text-ink whitespace-pre-wrap">{answer}</div>}
       </div>
     </div>
   )

@@ -29,26 +29,26 @@ export default function MessagesView({ players, coachId }: Props) {
     <div>
       <h1 className="font-display font-extrabold text-3xl text-ink mb-6">Mensajes</h1>
       <div className="grid grid-cols-[220px_1fr] gap-4 h-[70vh]">
-        <div className="bg-white rounded-2xl border border-slate-200 p-2 overflow-y-auto">
+        <div className="bg-white rounded-2xl border border-line p-2 overflow-y-auto">
           {players.map(p => (
             <button key={p.id} onClick={() => setSelected(p)}
-                    className={`w-full flex items-center gap-2 p-2 rounded-xl text-left ${selected?.id === p.id ? 'bg-slate-100' : ''}`}>
-              <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-500">{initials(p.name)}</div>
+                    className={`w-full flex items-center gap-2 p-2 rounded-xl text-left ${selected?.id === p.id ? 'bg-canvas' : ''}`}>
+              <div className="w-8 h-8 rounded-full bg-canvas flex items-center justify-center text-xs font-bold text-sub">{initials(p.name)}</div>
               <span className="text-sm font-medium truncate">{p.name}</span>
             </button>
           ))}
         </div>
-        <div className="bg-white rounded-2xl border border-slate-200 flex flex-col">
+        <div className="bg-white rounded-2xl border border-line flex flex-col">
           <div className="flex-1 overflow-y-auto p-4 space-y-2">
             {msgs.map(m => (
-              <div key={m.id} className={`max-w-[70%] px-3 py-2 rounded-2xl text-sm ${m.sender === 'coach' ? 'ml-auto bg-ink text-white' : 'bg-slate-100 text-ink'}`}>
+              <div key={m.id} className={`max-w-[70%] px-3 py-2 rounded-2xl text-sm ${m.sender === 'coach' ? 'ml-auto bg-ink text-white' : 'bg-canvas text-ink'}`}>
                 {m.text}
               </div>
             ))}
-            {!msgs.length && <p className="text-slate-400 text-sm text-center mt-8">Sin mensajes. Escribe el primero.</p>}
+            {!msgs.length && <p className="text-muted text-sm text-center mt-8">Sin mensajes. Escribe el primero.</p>}
           </div>
-          <div className="p-3 border-t border-slate-100 flex gap-2">
-            <input className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none"
+          <div className="p-3 border-t border-line flex gap-2">
+            <input className="flex-1 bg-canvas border border-line rounded-xl px-3 py-2 text-sm outline-none"
                    value={text} onChange={e => setText(e.target.value)} onKeyDown={e => e.key === 'Enter' && send()}
                    placeholder="Escribe un mensaje..." />
             <button onClick={send} className="bg-ink text-white rounded-xl px-4 font-semibold">Enviar</button>

@@ -36,44 +36,44 @@ export default function AddPlayerModal({ onClose, onSave }: Props) {
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4"
          onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+      <div className="bg-white rounded-2xl shadow-apple-lg w-full max-w-md p-6">
         <h2 className="font-display font-extrabold text-xl text-ink mb-4">Nuevo jugador</h2>
         {error && <div className="bg-red-50 text-red-600 text-sm rounded-xl px-4 py-2 mb-3">{error}</div>}
 
-        <label className="block text-xs font-bold text-slate-600 mb-1">NOMBRE *</label>
-        <input className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 mb-3 outline-none focus:border-campo-violet"
+        <label className="block text-xs font-bold text-sub mb-1">NOMBRE *</label>
+        <input className="w-full bg-canvas border border-line rounded-xl px-4 py-2.5 mb-3 outline-none focus:border-campo-violet"
                value={name} onChange={e => setName(e.target.value)} />
 
         <div className="grid grid-cols-2 gap-3 mb-3">
           <div>
-            <label className="block text-xs font-bold text-slate-600 mb-1">DEMARCACIÓN</label>
-            <select className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 outline-none"
+            <label className="block text-xs font-bold text-sub mb-1">DEMARCACIÓN</label>
+            <select className="w-full bg-canvas border border-line rounded-xl px-3 py-2.5 outline-none"
                     value={posGroup} onChange={e => setPosGroup(e.target.value as PosGroup)}>
               {POS_GROUPS.map(g => <option key={g} value={g}>{g}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-xs font-bold text-slate-600 mb-1">POSICIÓN</label>
-            <input className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 outline-none focus:border-campo-violet"
+            <label className="block text-xs font-bold text-sub mb-1">POSICIÓN</label>
+            <input className="w-full bg-canvas border border-line rounded-xl px-3 py-2.5 outline-none focus:border-campo-violet"
                    placeholder="Ej: Central" value={pos} onChange={e => setPos(e.target.value)} />
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-3 mb-5">
           <div>
-            <label className="block text-xs font-bold text-slate-600 mb-1">EDAD</label>
-            <input type="number" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 outline-none focus:border-campo-violet"
+            <label className="block text-xs font-bold text-sub mb-1">EDAD</label>
+            <input type="number" className="w-full bg-canvas border border-line rounded-xl px-3 py-2.5 outline-none focus:border-campo-violet"
                    value={age} onChange={e => setAge(e.target.value)} />
           </div>
           <div>
-            <label className="block text-xs font-bold text-slate-600 mb-1">CLUB</label>
-            <input className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 outline-none focus:border-campo-violet"
+            <label className="block text-xs font-bold text-sub mb-1">CLUB</label>
+            <input className="w-full bg-canvas border border-line rounded-xl px-3 py-2.5 outline-none focus:border-campo-violet"
                    value={club} onChange={e => setClub(e.target.value)} />
           </div>
         </div>
 
         <div className="flex justify-end gap-3">
-          <button onClick={onClose} className="px-4 py-2 text-slate-500 font-medium">Cancelar</button>
+          <button onClick={onClose} className="px-4 py-2 text-sub font-medium">Cancelar</button>
           <button onClick={save} disabled={busy}
                   className="px-5 py-2 bg-ink text-white font-semibold rounded-xl disabled:opacity-60">
             {busy ? '...' : 'Guardar'}

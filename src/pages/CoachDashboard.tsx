@@ -14,10 +14,10 @@ import AICoachView from '../components/AICoachView'
 import ReportsView from '../components/ReportsView'
 
 const NAV = [
-  { section: 'Principal', items: [['players', 'Jugadores']] },
+  { section: 'General', items: [['players', 'Jugadores']] },
   { section: 'Planificación', items: [['training', 'Entrenamientos'], ['calendar', 'Calendario'], ['tasks', 'Tareas']] },
   { section: 'Competición', items: [['matches', 'Partidos'], ['metrics', 'Métricas']] },
-  { section: 'Seguimiento', items: [['habits', 'Hábitos'], ['messages', 'Mensajes'], ['vanalysis', 'Vídeo análisis']] },
+  { section: 'Seguimiento', items: [['habits', 'Bienestar'], ['messages', 'Mensajes'], ['vanalysis', 'Vídeo']] },
   { section: 'Herramientas', items: [['ai', 'IA Coach'], ['reports', 'Informes']] },
 ]
 
@@ -28,7 +28,7 @@ export default function CoachDashboard() {
   const coachId = data.coachId ?? ''
 
   function render() {
-    if (data.loading) return <p className="text-slate-400">Cargando datos…</p>
+    if (data.loading) return <div className="text-muted text-[15px]">Cargando…</div>
     switch (view) {
       case 'players': return <PlayersView />
       case 'training': return <TrainingView players={data.players} training={data.training} sessionEx={data.sessionEx} coachId={coachId} onReload={data.reload} />
@@ -46,31 +46,33 @@ export default function CoachDashboard() {
   }
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
-      <aside className="w-60 bg-white border-r border-slate-200 flex flex-col p-4 sticky top-0 h-screen">
-        <div className="flex items-center gap-2 px-2 pb-5">
-          <div className="w-8 h-8 rounded-lg bg-ink flex items-center justify-center">
-            <span className="text-white font-display font-extrabold">C</span>
+    <div className="flex min-h-screen bg-canvas">
+      <aside className="w-[228px] shrink-0 flex flex-col px-4 py-6 sticky top-0 h-screen">
+        <div className="flex items-center gap-2.5 px-3 pb-8">
+          <div className="w-8 h-8 rounded-[10px] bg-ink flex items-center justify-center">
+            <span className="text-paper font-display font-bold text-[15px] tracking-tightest">C</span>
           </div>
-          <span className="font-display font-extrabold text-lg text-ink">CAMPO</span>
+          <span className="font-display font-bold text-[17px] text-ink tracking-tightest">CAMPO</span>
         </div>
         <nav className="flex-1 overflow-y-auto">
           {NAV.map(group => (
-            <div key={group.section} className="mb-4">
-              <div className="text-[10px] font-bold text-slate-400 tracking-wider px-3 mb-1 uppercase">{group.section}</div>
+            <div key={group.section} className="mb-6">
+              <div className="eyebrow px-3 mb-2">{group.section}</div>
               {group.items.map(([id, label]) => (
                 <button key={id} onClick={() => setView(id)}
-                        className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium mb-0.5 transition ${
-                          view === id ? 'bg-ink text-white' : 'text-slate-600 hover:bg-slate-100'}`}>
+                        className={`w-full text-left px-3 py-2 rounded-[10px] text-[14px] mb-0.5 transition ${
+                          view === id ? 'bg-paper text-ink font-medium shadow-apple' : 'text-sub hover:text-ink font-normal'}`}>
                   {label}
                 </button>
               ))}
             </div>
           ))}
         </nav>
-        <button onClick={signOut} className="text-sm text-slate-400 hover:text-red-500 px-3 py-2 text-left">Cerrar sesión</button>
+        <button onClick={signOut} className="text-[13px] text-muted hover:text-ink px-3 py-2 text-left transition">
+          Cerrar sesión
+        </button>
       </aside>
-      <main className="flex-1 p-8">{render()}</main>
+      <main className="flex-1 px-10 py-9 max-w-[1200px]">{render()}</main>
     </div>
   )
 }
