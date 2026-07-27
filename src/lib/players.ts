@@ -19,3 +19,7 @@ export function isGoalkeeper(p: Player) {
   const pos = `${p.pos ?? ''} ${p.pos_group ?? ''}`.toUpperCase()
   return /\b(POR|GK|PORTERO|ARQUERO|META)\b/.test(pos) || pos.includes('PORTER')
 }
+
+export function getPlayerName(players: Player[], id: string) {
+  return players.find(p => p.id === id)?.name ?? '—'
+}
