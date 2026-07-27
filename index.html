@@ -2632,10 +2632,10 @@ body{ letter-spacing:-0.005em; }
 </div></div></div>
 
 <!-- Add Match -->
-<div id="modal-match" style="display:none"><div class="modal-overlay" onclick="if(event.target===this)closeModal('modal-match')"><div class="modal"><button class="modal-close" onclick="closeModal('modal-match')"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button><div class="modal-title">Registrar partido</div><div class="modal-sub">Partido de un jugador en su club.</div><div class="form-group"><label class="form-label">Jugador *</label><select class="form-select" id="m-player"></select></div><div class="form-row"><div class="form-group"><label class="form-label">Fecha *</label><input class="form-input" id="m-date" type="date"></div><div class="form-group"><label class="form-label">Rival *</label><input class="form-input" id="m-rival" placeholder="Ej: Atlético Juvenil"></div></div><div class="form-row"><div class="form-group"><label class="form-label">Resultado</label><input class="form-input" id="m-result" placeholder="Ej: 2-1"></div><div class="form-group"><label class="form-label">Minutos jugados</label><input class="form-input" id="m-mins" type="number" min="0" max="120" placeholder="0"></div></div><div class="form-row"><div class="form-group"><label class="form-label">Convocado</label><select class="form-select" id="m-called"><option value="yes">Sí</option><option value="no">No</option></select></div><div class="form-group"><label class="form-label">Rol</label><select class="form-select" id="m-role"><option value="titular">Titular</option><option value="suplente">Suplente c/ minutos</option><option value="no-play">Conv. sin jugar</option><option value="no-called">No convocado</option></select></div></div><div class="form-group"><label class="form-label">Notas</label><input class="form-input" id="m-notes" placeholder="Impresiones, acciones clave..."></div><div class="modal-actions"><button class="btn-secondary" onclick="closeModal('modal-match')">Cancelar</button><button class="btn-primary" id="save-match-btn" onclick="saveMatch()"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Guardar</button></div></div></div></div>
+<div id="modal-match" style="display:none"><div class="modal-overlay" onclick="if(event.target===this)closeModal('modal-match')"><div class="modal"><button class="modal-close" onclick="closeModal('modal-match')"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button><div class="modal-title">Registrar partido</div><div class="modal-sub">Partido de un jugador en su club.</div><div class="form-group"><label class="form-label">Jugador *</label><select class="form-select" id="m-player" onchange="updateMatchGKFields()"></select></div><div class="form-row"><div class="form-group"><label class="form-label">Fecha *</label><input class="form-input" id="m-date" type="date"></div><div class="form-group"><label class="form-label">Rival *</label><input class="form-input" id="m-rival" placeholder="Ej: Atlético Juvenil"></div></div><div class="form-row"><div class="form-group"><label class="form-label">Resultado</label><input class="form-input" id="m-result" placeholder="Ej: 2-1"></div><div class="form-group"><label class="form-label">Minutos jugados</label><input class="form-input" id="m-mins" type="number" min="0" max="120" placeholder="0"></div></div><div class="form-row"><div class="form-group"><label class="form-label">Convocado</label><select class="form-select" id="m-called"><option value="yes">Sí</option><option value="no">No</option></select></div><div class="form-group"><label class="form-label">Rol</label><select class="form-select" id="m-role"><option value="titular">Titular</option><option value="suplente">Suplente c/ minutos</option><option value="no-play">Conv. sin jugar</option><option value="no-called">No convocado</option></select></div></div><div class="form-row"><div class="form-group"><label class="form-label">Goles</label><input class="form-input" id="m-goals" type="number" min="0" placeholder="0"></div><div class="form-group"><label class="form-label">Asistencias</label><input class="form-input" id="m-assists" type="number" min="0" placeholder="0"></div></div><div class="form-row" id="m-gk-row" style="display:none"><div class="form-group"><label class="form-label">Goles encajados</label><input class="form-input" id="m-conceded" type="number" min="0" placeholder="0"></div><div class="form-group"><label class="form-label">¿Portería a 0?</label><select class="form-select" id="m-cleansheet"><option value="0">No</option><option value="1">Sí</option></select></div></div><div class="form-group"><label class="form-label">Notas</label><input class="form-input" id="m-notes" placeholder="Impresiones, acciones clave..."></div><div class="modal-actions"><button class="btn-secondary" onclick="closeModal('modal-match')">Cancelar</button><button class="btn-primary" id="save-match-btn" onclick="saveMatch()"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Guardar</button></div></div></div></div>
 
 <!-- Add Training -->
-<div id="modal-training" style="display:none"><div class="modal-overlay" onclick="if(event.target===this)closeModal('modal-training')"><div class="modal" style="width:540px;max-height:90vh;overflow-y:auto"><button class="modal-close" onclick="closeModal('modal-training')"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button><div class="modal-title">Nueva sesión</div><div class="form-group"><label class="form-label">Jugador *</label><select class="form-select" id="tr-player"></select></div><div class="form-row"><div class="form-group"><label class="form-label">Tipo *</label><select class="form-select" id="tr-type"><option>Técnica individual</option><option>Físico</option><option>Velocidad</option><option>Fuerza</option><option>Movilidad</option><option>Finalización</option><option>1v1</option><option>Confianza</option><option>Prepartido</option><option>Recuperación</option></select></div><div class="form-group"><label class="form-label">Fecha *</label><input class="form-input" id="tr-date" type="date"></div></div>
+<div id="modal-training" style="display:none"><div class="modal-overlay" onclick="if(event.target===this)closeModal('modal-training')"><div class="modal" style="width:540px;max-height:90vh;overflow-y:auto"><button class="modal-close" onclick="closeModal('modal-training')"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button><div class="modal-title">Nueva sesión</div><div class="form-group"><label class="form-label">Jugador *</label><select class="form-select" id="tr-player"></select></div><div class="form-row"><div class="form-group"><label class="form-label">Tipo *</label><select class="form-select" id="tr-type"><option>Físico</option><option>Técnico</option><option>Táctico</option><option>Recuperación</option></select></div><div class="form-group"><label class="form-label">Fecha *</label><input class="form-input" id="tr-date" type="date"></div></div>
 
 <div style="margin:16px 0 10px;padding-top:14px;border-top:1px solid var(--border)"><div style="font-size:13px;font-weight:700;color:var(--t0)">Ejercicios de la sesión</div><div style="font-size:11px;color:var(--t2);margin-top:2px">Añade uno o varios ejercicios. Usa una plantilla o escríbelo a mano.</div></div>
 <div class="form-group"><label class="form-label">Plantilla rápida</label><select class="form-select" id="se-template" onchange="applySesTemplate()"><option value="">— Elegir ejercicio —</option></select></div>
@@ -2648,7 +2648,7 @@ body{ letter-spacing:-0.005em; }
 <div class="form-row"><div class="form-group"><label class="form-label">Duración (min)</label><input class="form-input" id="tr-dur" type="number" min="10" max="180" placeholder="60"></div><div class="form-group"><label class="form-label">RPE (1-10)</label><input class="form-input" id="tr-rpe" type="number" min="1" max="10" placeholder="7"></div></div><div class="form-group"><label class="form-label">Objetivo</label><input class="form-input" id="tr-goal" placeholder="Foco principal de la sesión"></div><div class="form-group"><label class="form-label">Notas</label><input class="form-input" id="tr-notes" placeholder="Observaciones..."></div><div class="modal-actions"><button class="btn-secondary" onclick="closeModal('modal-training')">Cancelar</button><button class="btn-primary" id="save-training-btn" onclick="saveTraining()"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Guardar</button></div></div></div></div>
 
 <!-- Add Task -->
-<div id="modal-task" style="display:none"><div class="modal-overlay" onclick="if(event.target===this)closeModal('modal-task')"><div class="modal" style="width:470px"><button class="modal-close" onclick="closeModal('modal-task')"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button><div class="modal-title">Nueva tarea</div><div class="form-group"><label class="form-label">Jugador *</label><select class="form-select" id="t-player"></select></div><div class="form-row"><div class="form-group"><label class="form-label">Tipo</label><select class="form-select" id="t-type" onchange="updateTaskTemplates()"><option>Técnica</option><option>Físico</option><option>Mental</option><option>Sueño</option><option>Nutrición</option><option>Recuperación</option><option>Vídeo</option><option>Táctica</option></select></div><div class="form-group"><label class="form-label">Plantilla rápida</label><select class="form-select" id="t-template" onchange="applyTaskTemplate()"><option value="">— Elegir —</option></select></div></div><div class="form-group"><label class="form-label">Título *</label><input class="form-input" id="t-title" placeholder="Ej: Sentadilla con salto"></div><div class="form-group"><label class="form-label">Descripción</label><input class="form-input" id="t-desc" placeholder="Ej: 20 min de movilidad de cadera"></div><div class="form-row" style="grid-template-columns:1fr 1fr 1fr"><div class="form-group"><label class="form-label">Series</label><input class="form-input" id="t-series" placeholder="4"></div><div class="form-group"><label class="form-label">Reps</label><input class="form-input" id="t-reps" placeholder="8-12"></div><div class="form-group"><label class="form-label">Peso</label><input class="form-input" id="t-weight" placeholder="20kg"></div></div><div class="form-group"><label class="form-label">Enlace de vídeo</label><input class="form-input" id="t-video" placeholder="https://youtube.com/..."></div><div class="form-row"><div class="form-group"><label class="form-label">Prioridad</label><select class="form-select" id="t-priority"><option value="normal">Normal</option><option value="high">Alta</option><option value="urgent">Urgente</option></select></div><div class="form-group"><label class="form-label">Fecha límite</label><input class="form-input" id="t-date" type="date"></div></div><div class="modal-actions"><button class="btn-secondary" onclick="closeModal('modal-task')">Cancelar</button><button class="btn-primary" id="save-task-btn" onclick="saveTask()"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Asignar</button></div></div></div></div>
+<div id="modal-task" style="display:none"><div class="modal-overlay" onclick="if(event.target===this)closeModal('modal-task')"><div class="modal" style="width:470px"><button class="modal-close" onclick="closeModal('modal-task')"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button><div class="modal-title">Nueva tarea</div><div class="form-group"><label class="form-label">Jugador *</label><select class="form-select" id="t-player"></select></div><div class="form-row"><div class="form-group"><label class="form-label">Tipo</label><select class="form-select" id="t-type" onchange="updateTaskTemplates()"><option>Vídeo</option><option>Nutrición</option><option>Sueño</option><option>Mental</option></select></div><div class="form-group"><label class="form-label">Plantilla rápida</label><select class="form-select" id="t-template" onchange="applyTaskTemplate()"><option value="">— Elegir —</option></select></div></div><div class="form-group"><label class="form-label">Título *</label><input class="form-input" id="t-title" placeholder="Ej: Sentadilla con salto"></div><div class="form-group"><label class="form-label">Descripción</label><input class="form-input" id="t-desc" placeholder="Ej: 20 min de movilidad de cadera"></div><div class="form-row" style="grid-template-columns:1fr 1fr 1fr"><div class="form-group"><label class="form-label">Series</label><input class="form-input" id="t-series" placeholder="4"></div><div class="form-group"><label class="form-label">Reps</label><input class="form-input" id="t-reps" placeholder="8-12"></div><div class="form-group"><label class="form-label">Peso</label><input class="form-input" id="t-weight" placeholder="20kg"></div></div><div class="form-group"><label class="form-label">Enlace de vídeo</label><input class="form-input" id="t-video" placeholder="https://youtube.com/..."></div><div class="form-row"><div class="form-group"><label class="form-label">Prioridad</label><select class="form-select" id="t-priority"><option value="normal">Normal</option><option value="high">Alta</option><option value="urgent">Urgente</option></select></div><div class="form-group"><label class="form-label">Fecha límite</label><input class="form-input" id="t-date" type="date"></div></div><div class="modal-actions"><button class="btn-secondary" onclick="closeModal('modal-task')">Cancelar</button><button class="btn-primary" id="save-task-btn" onclick="saveTask()"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Asignar</button></div></div></div></div>
 
 <!-- Video Modal -->
 <div id="modal-video" style="display:none"><div class="modal-overlay" onclick="if(event.target===this)closeVideoModal()"><div class="modal" style="width:680px;padding:22px"><button class="modal-close" onclick="closeVideoModal()"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button><div id="video-player-content"></div><div style="padding:12px 0 2px"><div style="font-size:14px;font-weight:700;color:var(--t0);margin-bottom:2px" id="vmod-title"></div><div style="font-size:11.5px;color:var(--t3)" id="vmod-meta"></div></div></div></div></div>
@@ -3876,6 +3876,21 @@ function renderPassport(p){
   var bars=Object.entries(attrs).map(function(e){return '<div class="bar-row"><div class="bar-labels"><span>'+e[0]+'</span><span style="font-weight:600">'+e[1]+'</span></div><div class="bar-track"><div class="bar-fill" style="width:'+e[1]+'%"></div></div></div>'}).join('');
   var playerMatches=S.matches.filter(function(m){return m.player_id===p.id});
   var totalMins=playerMatches.reduce(function(s,m){return s+parseInt(m.mins||0)},0);
+  // Estadísticas de competición (sumadas de los partidos)
+  var totCalled = playerMatches.filter(function(m){return m.called==='yes'||m.role==='titular'||m.role==='suplente'||m.role==='no-play';}).length;
+  var totGoals = playerMatches.reduce(function(s,m){return s+(parseInt(m.goals)||0)},0);
+  var totAssists = playerMatches.reduce(function(s,m){return s+(parseInt(m.assists)||0)},0);
+  var totConceded = playerMatches.reduce(function(s,m){return s+(parseInt(m.conceded)||0)},0);
+  var totCleanSheets = playerMatches.filter(function(m){return m.clean_sheet===true;}).length;
+  var esPortero = isGoalkeeper(p);
+  var competCells =
+    '<div style="background:var(--bg2);border-radius:var(--r-sm);padding:10px"><div style="font-family:var(--fd);font-size:18px;font-weight:700">'+totCalled+'</div><div style="font-size:9px;color:var(--t3)">CONVOCADO</div></div>'+
+    '<div style="background:var(--bg2);border-radius:var(--r-sm);padding:10px"><div style="font-family:var(--fd);font-size:18px;font-weight:700">'+totalMins+'</div><div style="font-size:9px;color:var(--t3)">MINUTOS</div></div>'+
+    '<div style="background:var(--bg2);border-radius:var(--r-sm);padding:10px"><div style="font-family:var(--fd);font-size:18px;font-weight:700;color:#16a34a">'+totGoals+'</div><div style="font-size:9px;color:var(--t3)">GOLES</div></div>'+
+    '<div style="background:var(--bg2);border-radius:var(--r-sm);padding:10px"><div style="font-family:var(--fd);font-size:18px;font-weight:700;color:#2563eb">'+totAssists+'</div><div style="font-size:9px;color:var(--t3)">ASIST.</div></div>'+
+    (esPortero?'<div style="background:var(--bg2);border-radius:var(--r-sm);padding:10px"><div style="font-family:var(--fd);font-size:18px;font-weight:700;color:#dc2626">'+totConceded+'</div><div style="font-size:9px;color:var(--t3)">ENCAJADOS</div></div>':'')+
+    (esPortero?'<div style="background:var(--bg2);border-radius:var(--r-sm);padding:10px"><div style="font-family:var(--fd);font-size:18px;font-weight:700;color:#16a34a">'+totCleanSheets+'</div><div style="font-size:9px;color:var(--t3)">PORTERÍAS 0</div></div>':'');
+  var competHTML = '<div class="card" style="margin-bottom:14px"><div class="card-title">Estadísticas de competición</div><div style="display:grid;grid-template-columns:repeat('+(esPortero?'3':'4')+',1fr);gap:8px;text-align:center">'+competCells+'</div></div>';
   // Physical data section
   var hasPhysical = p.height_cm||p.weight_kg||p.vertical_jump||p.rm_squat;
   var physHTML = '';
@@ -3946,6 +3961,7 @@ function renderPassport(p){
     '<div class="g2">' +
       '<div>' +
         '<div class="card" style="margin-bottom:14px"><div class="card-title">Atributos estimados'+(aiAttrs?' <span class="badge badge-blue">IA</span>':'')+'</div>'+bars+'</div>' +
+        competHTML +
         physHTML +
         aiMetricsHTML +
       '</div>' +
@@ -4101,9 +4117,24 @@ function openAddMatch(prePlayerId){
   sel.innerHTML=S.players.map(p=>`<option value="${p.id}">${p.name}${p.club?` — ${p.club}`:''}</option>`).join('');
   if(prePlayerId)sel.value=prePlayerId;
   document.getElementById('m-date').value=new Date().toISOString().slice(0,10);
-  ['m-result','m-notes'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  ['m-result','m-notes','m-goals','m-assists','m-conceded'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
   document.getElementById('m-mins').value='0';
+  document.getElementById('m-cleansheet').value='0';
+  updateMatchGKFields();
   document.getElementById('modal-match').style.display='block';
+}
+
+// Detecta si el jugador seleccionado es portero → muestra campos de portero
+function isGoalkeeper(p){
+  if(!p) return false;
+  var pos = ((p.pos||'')+' '+(p.pos_group||'')).toUpperCase();
+  return /\b(POR|GK|PORTERO|ARQUERO|META)\b/.test(pos) || pos.indexOf('PORTER')>=0;
+}
+function updateMatchGKFields(){
+  var pid = document.getElementById('m-player').value;
+  var p = getPlayer(pid);
+  var row = document.getElementById('m-gk-row');
+  if(row) row.style.display = isGoalkeeper(p) ? 'grid' : 'none';
 }
 
 async function saveMatch(){
@@ -4115,6 +4146,8 @@ async function saveMatch(){
   btn.disabled = true;
   setSyncBadge(true);
 
+  const p = getPlayer(playerId);
+  const gk = isGoalkeeper(p);
   const payload = {
     coach_id: COACH_ID,
     player_id: playerId,
@@ -4124,6 +4157,10 @@ async function saveMatch(){
     mins: parseInt(document.getElementById('m-mins').value)||0,
     called: document.getElementById('m-called').value,
     role: document.getElementById('m-role').value,
+    goals: parseInt(document.getElementById('m-goals').value)||0,
+    assists: parseInt(document.getElementById('m-assists').value)||0,
+    conceded: gk ? (parseInt(document.getElementById('m-conceded').value)||0) : null,
+    clean_sheet: gk ? (document.getElementById('m-cleansheet').value==='1') : null,
     notes: (document.getElementById('m-notes').value||'').trim()||null
   };
 
@@ -4148,6 +4185,7 @@ async function saveMatch(){
 // SESIONES con EJERCICIOS — lista temporal mientras el modal abre
 // ════════════════════════════════════════════════════════════
 let _sesEx = [];
+let _editingSessionId = null;
 
 function updateSesTemplates(){
   const sel = document.getElementById('se-template');
@@ -4207,6 +4245,9 @@ function renderSesExList(){
 }
 
 function openAddTraining(prePlayerId){
+  _editingSessionId = null;
+  const modal = document.getElementById('modal-training');
+  modal.querySelector('.modal-title').textContent = 'Nueva sesión';
   const sel=document.getElementById('tr-player');
   sel.innerHTML=S.players.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
   if(prePlayerId)sel.value=prePlayerId;
@@ -4215,10 +4256,109 @@ function openAddTraining(prePlayerId){
   _sesEx = [];
   renderSesExList();
   updateSesTemplates();
-  document.getElementById('modal-training').style.display='block';
+  modal.style.display='block';
+}
+
+function openEditTraining(id){
+  const s = (S.training||[]).find(function(x){return x.id==id;});
+  if(!s) return;
+  _editingSessionId = id;
+  const modal = document.getElementById('modal-training');
+  modal.querySelector('.modal-title').textContent = 'Editar sesión';
+  const sel=document.getElementById('tr-player');
+  sel.innerHTML=S.players.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
+  sel.value = s.player_id;
+  document.getElementById('tr-type').value = s.type||'Físico';
+  document.getElementById('tr-date').value = (s.date||'').slice(0,10);
+  document.getElementById('tr-dur').value = s.duration||'';
+  document.getElementById('tr-rpe').value = s.rpe||'';
+  document.getElementById('tr-goal').value = s.goal||'';
+  document.getElementById('tr-notes').value = s.notes||'';
+  ['se-title','se-series','se-reps','se-weight','se-video'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  // Cargar ejercicios existentes de la sesión
+  _sesEx = (S.sessionEx||[]).filter(function(e){return e.session_id===id;})
+    .sort((a,b)=>(a.ord||0)-(b.ord||0))
+    .map(function(e){return {title:e.title, series:e.series||'', reps:e.reps||'', weight:e.weight||'', video_url:e.video_url||''};});
+  renderSesExList();
+  updateSesTemplates();
+  modal.style.display='block';
 }
 
 async function saveTraining(){
+  const playerId=document.getElementById('tr-player').value;
+  if(!playerId){showToast('Elige un jugador','error');return;}
+  if(!_sesEx.length && !document.getElementById('tr-dur').value){showToast('Añade al menos un ejercicio o la duración','error');return;}
+  const btn=document.getElementById('save-training-btn');btn.disabled=true;
+  setSyncBadge(true);
+  const token = ACCESS_TOKEN || (await DB.auth.getSession()).data.session.access_token;
+  const sessionData = {
+    coach_id:COACH_ID, player_id:playerId,
+    date:document.getElementById('tr-date').value,
+    type:document.getElementById('tr-type').value,
+    duration:parseInt(document.getElementById('tr-dur').value)||null,
+    rpe:parseInt(document.getElementById('tr-rpe').value)||7,
+    goal:document.getElementById('tr-goal').value.trim(),
+    notes:document.getElementById('tr-notes').value.trim()
+  };
+
+  // ─── MODO EDICIÓN ───────────────────────────────────────
+  if(_editingSessionId){
+    try {
+      await fetch(SUPA_URL+'/rest/v1/training_sessions?id=eq.'+_editingSessionId, {
+        method:'PATCH',
+        headers:{'Content-Type':'application/json','apikey':SUPA_KEY,'Authorization':'Bearer '+token,'Prefer':'return=minimal'},
+        body: JSON.stringify(sessionData)
+      });
+      // Reemplazar ejercicios: borrar los viejos e insertar los nuevos
+      await fetch(SUPA_URL+'/rest/v1/session_exercises?session_id=eq.'+_editingSessionId, {
+        method:'DELETE', headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+token}
+      });
+      if(_sesEx.length){
+        const rows = _sesEx.map(function(ex,i){return {session_id:_editingSessionId, coach_id:COACH_ID, player_id:playerId, title:ex.title, series:ex.series||null, reps:ex.reps||null, weight:ex.weight||null, video_url:ex.video_url||null, ord:i, done:false};});
+        await fetch(SUPA_URL+'/rest/v1/session_exercises', {method:'POST', headers:{'Content-Type':'application/json','apikey':SUPA_KEY,'Authorization':'Bearer '+token,'Prefer':'return=minimal'}, body:JSON.stringify(rows)});
+      }
+      setSyncBadge(false);btn.disabled=false;
+      // Actualizar estado local
+      var idx = S.training.findIndex(function(x){return x.id==_editingSessionId;});
+      if(idx>=0) Object.assign(S.training[idx], sessionData);
+      S.sessionEx = (S.sessionEx||[]).filter(function(e){return e.session_id!==_editingSessionId;});
+      _sesEx.forEach(function(ex,i){ S.sessionEx.push({session_id:_editingSessionId, player_id:playerId, coach_id:COACH_ID, title:ex.title, series:ex.series, reps:ex.reps, weight:ex.weight, video_url:ex.video_url, ord:i}); });
+      closeModal('modal-training');renderTraining();renderDashboard();
+      showToast('✓ Sesión actualizada','success');
+      _editingSessionId=null; _sesEx=[];
+    } catch(e){ setSyncBadge(false);btn.disabled=false; showToast('Error: '+e.message,'error'); }
+    return;
+  }
+
+  // ─── MODO CREAR ─────────────────────────────────────────
+  sessionData.completed = false;
+  const {data,error}=await DB.from('training_sessions').insert([sessionData]).select().single();
+  if(error){setSyncBadge(false);btn.disabled=false;showToast('Error: '+error.message,'error');return;}
+
+  if(_sesEx.length && data && data.id){
+    const rows = _sesEx.map(function(ex,i){
+      return {session_id:data.id, coach_id:COACH_ID, player_id:playerId,
+        title:ex.title, series:ex.series||null, reps:ex.reps||null,
+        weight:ex.weight||null, video_url:ex.video_url||null, ord:i, done:false};
+    });
+    try {
+      await fetch(SUPA_URL+'/rest/v1/session_exercises', {
+        method:'POST',
+        headers:{'Content-Type':'application/json','apikey':SUPA_KEY,'Authorization':'Bearer '+token,'Prefer':'return=minimal'},
+        body: JSON.stringify(rows)
+      });
+      S.sessionEx = S.sessionEx||[];
+      rows.forEach(function(r){ S.sessionEx.push(r); });
+    } catch(e){ /* si falla, la sesión ya está creada */ }
+  }
+  setSyncBadge(false);btn.disabled=false;
+  S.training.unshift(data);
+  closeModal('modal-training');renderTraining();renderDashboard();
+  showToast('✓ Sesión planificada con '+_sesEx.length+' ejercicio(s)','success');
+  _sesEx=[];
+}
+
+async function _saveTraining_OLD_UNUSED(){
   const playerId=document.getElementById('tr-player').value;
   if(!playerId){showToast('Elige un jugador','error');return;}
   if(!_sesEx.length && !document.getElementById('tr-dur').value){showToast('Añade al menos un ejercicio o la duración','error');return;}
@@ -4339,7 +4479,7 @@ function renderTraining(){
           '<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;cursor:pointer" onclick="openPlayerById(\''+p.id+'\')">'+p.name+'</div><div style="font-size:11px;color:var(--t3)">'+formatDate(t.date)+' · '+(t.duration||0)+' min</div></div>'+
           '<div style="text-align:right"><div style="font-size:18px;font-weight:700;color:'+rpeCol+';font-family:var(--fd)">'+(t.rpe||'-')+'</div><div style="font-size:9px;color:var(--t3);letter-spacing:.5px">RPE</div></div>'+
         '</div>'+
-        '<div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap"><span class="badge badge-blue" style="font-size:10px">'+(t.type||'Sesión')+'</span>'+statusBadge+'</div>'+
+        '<div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;align-items:center"><span class="badge badge-blue" style="font-size:10px">'+(t.type||'Sesión')+'</span>'+statusBadge+'<button onclick="openEditTraining(\''+t.id+'\')" style="margin-left:auto;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-size:11px;font-weight:600;color:var(--t2);cursor:pointer">✏️ Editar</button></div>'+
         (t.goal?'<div style="font-size:11.5px;color:var(--t2);margin-bottom:6px"><strong>Objetivo:</strong> '+t.goal+'</div>':'')+
         renderSessionExercises(t.id)+
         (t.notes?'<div style="font-size:11.5px;color:var(--t3);font-style:italic">"'+t.notes+'"</div>':'')+
@@ -5354,6 +5494,19 @@ const TASK_TEMPLATES = {
   'Recuperación': [
     {t:'Estiramientos', s:'1', r:'15min', w:'—', d:'Flexibilidad'},
     {t:'Baño de contraste', s:'1', r:'10min', w:'—', d:'Recuperación muscular'}
+  ],
+  'Vídeo': [
+    {t:'Analizar partido propio', s:'', r:'', w:'', d:'Ver tu último partido y anotar 3 aciertos y 3 mejoras'},
+    {t:'Estudiar a un referente', s:'', r:'', w:'', d:'Ver un vídeo de un jugador de tu posición'}
+  ],
+  'Nutrición': [
+    {t:'Registro de comidas', s:'', r:'', w:'', d:'Apunta lo que comes durante el día'},
+    {t:'Hidratación', s:'', r:'2L', w:'', d:'Beber al menos 2 litros de agua'},
+    {t:'Comida pre-partido', s:'', r:'', w:'', d:'Comida rica en hidratos 3h antes'}
+  ],
+  'Sueño': [
+    {t:'8 horas de sueño', s:'', r:'8h', w:'', d:'Dormir mínimo 8 horas'},
+    {t:'Rutina sin pantallas', s:'', r:'', w:'', d:'Nada de móvil 30 min antes de dormir'}
   ]
 };
 
