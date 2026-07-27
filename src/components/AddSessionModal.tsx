@@ -4,12 +4,12 @@ import { Player } from '../types/database'
 import { TASK_TEMPLATES } from '../lib/templates'
 
 interface Ex { title: string; series: string; reps: string; weight: string; video_url: string }
-interface Props { players: Player[]; coachId: string; onClose: () => void; onSaved: () => void }
+interface Props { players: Player[]; coachId: string; prePlayerId?: string; onClose: () => void; onSaved: () => void }
 
 const TYPES = ['Físico', 'Técnico', 'Táctico', 'Recuperación']
 
-export default function AddSessionModal({ players, coachId, onClose, onSaved }: Props) {
-  const [playerId, setPlayerId] = useState(players[0]?.id ?? '')
+export default function AddSessionModal({ players, coachId, prePlayerId, onClose, onSaved }: Props) {
+  const [playerId, setPlayerId] = useState(prePlayerId ?? players[0]?.id ?? '')
   const [type, setType] = useState('Físico')
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10))
   const [goal, setGoal] = useState('')

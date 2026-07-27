@@ -10,7 +10,7 @@ export default function PlayersView() {
   const [showAdd, setShowAdd] = useState(false)
   const [selected, setSelected] = useState<Player | null>(null)
 
-  if (selected) return <PlayerDetail player={selected} onBack={() => setSelected(null)} />
+  if (selected) return <PlayerDetail player={selected} onBack={() => setSelected(null)} players={players} />
 
   return (
     <div className="animate-[fadeIn_.4s_ease]">
