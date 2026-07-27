@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
+import PlayersView from '../components/PlayersView'
 
 const NAV = [
   { section: 'Principal', items: [['dashboard', 'Dashboard'], ['players', 'Jugadores']] },
@@ -11,11 +12,10 @@ const NAV = [
 
 export default function CoachDashboard() {
   const { signOut } = useAuth()
-  const [view, setView] = useState('dashboard')
+  const [view, setView] = useState('players')
 
   return (
     <div className="flex min-h-screen bg-slate-50">
-      {/* Sidebar */}
       <aside className="w-60 bg-white border-r border-slate-200 flex flex-col p-4 sticky top-0 h-screen">
         <div className="flex items-center gap-2 px-2 pb-5">
           <div className="w-8 h-8 rounded-lg bg-ink flex items-center justify-center">
@@ -30,13 +30,10 @@ export default function CoachDashboard() {
                 {group.section}
               </div>
               {group.items.map(([id, label]) => (
-                <button
-                  key={id}
-                  onClick={() => setView(id)}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium mb-0.5 transition ${
-                    view === id ? 'bg-ink text-white' : 'text-slate-600 hover:bg-slate-100'
-                  }`}
-                >
+                <button key={id} onClick={() => setView(id)}
+                        className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium mb-0.5 transition ${
+                          view === id ? 'bg-ink text-white' : 'text-slate-600 hover:bg-slate-100'
+                        }`}>
                   {label}
                 </button>
               ))}
@@ -48,12 +45,17 @@ export default function CoachDashboard() {
         </button>
       </aside>
 
-      {/* Main */}
       <main className="flex-1 p-8">
-        <h1 className="font-display font-extrabold text-3xl text-ink capitalize">{view}</h1>
-        <p className="text-slate-500 mt-2">
-          Esta pantalla se migrará en las siguientes fases. El cimiento (auth, tipos, rutas, layout) ya funciona.
-        </p>
+        {view === 'players' ? (
+          <PlayersView />
+        ) : (
+          <div>
+            <h1 className="font-display font-extrabold text-3xl text-ink capitalize">{view}</h1>
+            <p className="text-slate-500 mt-2">
+              Esta pantalla se migrará en las siguientes fases. La de Jugadores ya funciona — pruébala.
+            </p>
+          </div>
+        )}
       </main>
     </div>
   )
