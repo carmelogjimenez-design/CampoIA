@@ -8,6 +8,8 @@ import AddSessionModal from './AddSessionModal'
 import AddTaskModal from './AddTaskModal'
 import AddMatchModal from './AddMatchModal'
 import Modal from './Modal'
+import { PlayerAIModal, ImportSeasonModal, QuickReportModal } from './PlayerActionModals'
+import ExportPlanModal, { ParsedPlan } from './ExportPlanModal'
 
 interface Props { player: Player; onBack: () => void; players?: Player[] }
 
@@ -19,6 +21,7 @@ export default function PlayerDetail({ player: initial, onBack, players = [] }: 
   const [sessions, setSessions] = useState<TrainingSession[]>([])
   const [tasks, setTasks] = useState<Task[]>([])
   const [modal, setModal] = useState<null | 'edit' | 'session' | 'task' | 'match' | 'ai' | 'import' | 'report'>(null)
+  const [exportPlan, setExportPlan] = useState<ParsedPlan | null>(null)
   const gk = isGoalkeeper(player)
   const single = players.length ? players : [player]
 
@@ -171,9 +174,10 @@ export default function PlayerDetail({ player: initial, onBack, players = [] }: 
       {modal === 'session' && <AddSessionModal players={single} coachId={coachId} prePlayerId={player.id} onClose={() => setModal(null)} onSaved={load} />}
       {modal === 'task' && <AddTaskModal players={single} coachId={coachId} prePlayerId={player.id} onClose={() => setModal(null)} onSaved={load} />}
       {modal === 'match' && <AddMatchModal players={single} coachId={coachId} prePlayerId={player.id} onClose={() => setModal(null)} onSaved={load} />}
-      {modal === 'ai' && <Modal title="Análisis IA" onClose={() => setModal(null)}><p className="text-sub text-[14px]">El análisis con IA se conectará cuando validemos la Edge Function. Lo dejamos preparado en la ficha.</p><div className="flex justify-end mt-6"><button onClick={() => setModal(null)} className="btn-ink">Entendido</button></div></Modal>}
-      {modal === 'import' && <Modal title="Importar temporada" onClose={() => setModal(null)}><p className="text-sub text-[14px]">Aquí pegarás el histórico de la temporada y la IA lo estructurará. Pendiente de conectar la Edge Function.</p><div className="flex justify-end mt-6"><button onClick={() => setModal(null)} className="btn-ink">Entendido</button></div></Modal>}
-      {modal === 'report' && <Modal title="Descargar informe" onClose={() => setModal(null)}><p className="text-sub text-[14px]">La generación de informe en PDF con los datos del jugador se añadirá en la fase de informes.</p><div className="flex justify-end mt-6"><button onClick={() => setModal(null)} className="btn-ink">Entendido</button></div></Modal>}
+      {modal === 'ai' && <PlayerAIModal player={player} onClose={() => setModal(null)} onExport={p => { setModal(null); setExportPlan(p) }} />}
+      {modal === 'import' && <ImportSeasonModal player={player} onClose={() => setModal(null)} />}
+      {modal === 'report' && <QuickReportModal player={player} onClose={() => setModal(null)} />}
+      {exportPlan && <ExportPlanModal plan={exportPlan} playerId={player.id} coachId={coachId} onClose={() => setExportPlan(null)} onDone={load} />}
     </div>
   )
 }
