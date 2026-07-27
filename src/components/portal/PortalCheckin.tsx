@@ -71,7 +71,9 @@ export default function PortalCheckin({ pd }: { pd: PlayerData }) {
           {history.map(c => (
             <div key={c.id} className="flex items-center gap-3 py-2.5 border-b border-line last:border-0">
               <span className="text-[20px]">{c.mood || '—'}</span>
-              <div className="flex-1"><div className="text-[13px] text-ink">{c.energy || '—'} energía</div><div className="text-[11px] text-muted tnum">{c.date}{c.sleep_hours ? ` · ${c.sleep_hours}h sueño` : ''}</div></div>
+              <div className="flex-1"><div className="text-[13px] text-ink">{c.energy || '—'} energía</div><div className="text-[11px] text-muted tnum">{c.date}{c.sleep_hours ? ` · ${c.sleep_hours}h sueño` : ''}</div>
+                {c.coach_feedback && <div className="mt-1.5 bg-volt/20 rounded-lg px-2.5 py-1.5 text-[12px] text-ink"><b>Coach:</b> {c.coach_feedback}</div>}
+              </div>
             </div>
           ))}
         </div>

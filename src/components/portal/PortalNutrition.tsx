@@ -70,7 +70,9 @@ export default function PortalNutrition({ pd }: { pd: PlayerData }) {
         {today.map(t => (
           <div key={t.id} className="flex items-center gap-3 py-2.5 border-b border-line last:border-0">
             <span className="text-[16px]">{QUALITY.find(q => q[0] === t.quality)?.[1] ?? '⚪'}</span>
-            <div className="flex-1"><div className="text-[14px] text-ink">{t.description}</div><div className="text-[11px] text-muted">{t.meal_type}</div></div>
+            <div className="flex-1"><div className="text-[14px] text-ink">{t.description}</div><div className="text-[11px] text-muted">{t.meal_type}</div>
+              {t.coach_feedback && <div className="mt-1 bg-volt/20 rounded-lg px-2.5 py-1 text-[12px] text-ink"><b>Coach:</b> {t.coach_feedback}</div>}
+            </div>
           </div>
         ))}
       </div>

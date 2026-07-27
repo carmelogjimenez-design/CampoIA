@@ -123,6 +123,7 @@ export interface CheckIn {
   pain: number | null
   pain_zone: string | null
   notes: string | null
+  coach_feedback: string | null
   created_at: string
 }
 
@@ -158,5 +159,6 @@ export interface NutritionLog {
   meal_type: string | null
   description: string | null
   quality: string | null      // good | regular | bad
+  coach_feedback: string | null
   created_at: string
 }
