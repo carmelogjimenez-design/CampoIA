@@ -1,22 +1,32 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-import { Player } from '../types/database'
+import { Player, TrainingSession, SessionExercise } from '../types/database'
 import { TASK_TEMPLATES } from '../lib/templates'
+import Modal from './Modal'
 
 interface Ex { title: string; series: string; reps: string; weight: string; video_url: string }
-interface Props { players: Player[]; coachId: string; prePlayerId?: string; onClose: () => void; onSaved: () => void }
-
+interface Props {
+  players: Player[]; coachId: string; prePlayerId?: string
+  editSession?: TrainingSession; editExercises?: SessionExercise[]
+  onClose: () => void; onSaved: () => void
+}
 const TYPES = ['Físico', 'Técnico', 'Táctico', 'Recuperación']
 
-export default function AddSessionModal({ players, coachId, prePlayerId, onClose, onSaved }: Props) {
-  const [playerId, setPlayerId] = useState(prePlayerId ?? players[0]?.id ?? '')
-  const [type, setType] = useState('Físico')
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10))
-  const [goal, setGoal] = useState('')
+export default function AddSessionModal({ players, coachId, prePlayerId, editSession, editExercises, onClose, onSaved }: Props) {
+  const editing = !!editSession
+  const [playerId, setPlayerId] = useState(editSession?.player_id ?? prePlayerId ?? players[0]?.id ?? '')
+  const [type, setType] = useState(editSession?.type ?? 'Físico')
+  const [date, setDate] = useState(editSession?.date?.slice(0, 10) ?? new Date().toISOString().slice(0, 10))
+  const [goal, setGoal] = useState(editSession?.goal ?? '')
   const [exList, setExList] = useState<Ex[]>([])
   const [ex, setEx] = useState<Ex>({ title: '', series: '', reps: '', weight: '', video_url: '' })
   const [busy, setBusy] = useState(false)
-  const [error, setError] = useState('')
+
+  useEffect(() => {
+    if (editExercises) setExList(editExercises.map(e => ({
+      title: e.title, series: e.series ?? '', reps: e.reps ?? '', weight: e.weight ?? '', video_url: e.video_url ?? '',
+    })))
+  }, [editExercises])
 
   function applyTemplate(val: string) {
     if (!val) return
@@ -26,98 +36,72 @@ export default function AddSessionModal({ players, coachId, prePlayerId, onClose
   }
   function addEx() {
     if (!ex.title.trim()) return
-    setExList([...exList, ex])
-    setEx({ title: '', series: '', reps: '', weight: '', video_url: '' })
+    setExList([...exList, ex]); setEx({ title: '', series: '', reps: '', weight: '', video_url: '' })
   }
 
   async function save() {
-    if (!playerId) { setError('Elige un jugador'); return }
-    setBusy(true); setError('')
-    const { data, error } = await supabase.from('training_sessions')
-      .insert([{ coach_id: coachId, player_id: playerId, date, type, goal: goal.trim(), completed: false }])
-      .select().single()
-    if (error) { setError(error.message); setBusy(false); return }
-    if (exList.length && data) {
-      await supabase.from('session_exercises').insert(
-        exList.map((e, i) => ({
-          session_id: data.id, coach_id: coachId, player_id: playerId,
-          title: e.title, series: e.series || null, reps: e.reps || null,
-          weight: e.weight || null, video_url: e.video_url || null, ord: i, done: false,
-        }))
-      )
+    if (!playerId) return
+    setBusy(true)
+    let sessionId = editSession?.id
+    if (editing) {
+      await supabase.from('training_sessions').update({ player_id: playerId, date, type, goal: goal.trim() }).eq('id', sessionId)
+      await supabase.from('session_exercises').delete().eq('session_id', sessionId)  // recrear ejercicios
+    } else {
+      const { data } = await supabase.from('training_sessions')
+        .insert([{ coach_id: coachId, player_id: playerId, date, type, goal: goal.trim(), completed: false }]).select().single()
+      sessionId = data?.id
+    }
+    if (exList.length && sessionId) {
+      await supabase.from('session_exercises').insert(exList.map((e, i) => ({
+        session_id: sessionId, coach_id: coachId, player_id: playerId,
+        title: e.title, series: e.series || null, reps: e.reps || null, weight: e.weight || null,
+        video_url: e.video_url || null, ord: i, done: false,
+      })))
     }
     setBusy(false); onSaved(); onClose()
   }
 
-  const inp = 'w-full bg-canvas border border-line rounded-xl px-3 py-2 outline-none focus:border-campo-violet text-sm'
-
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4"
-         onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="bg-white rounded-2xl shadow-apple-lg w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
-        <h2 className="font-display font-extrabold text-xl text-ink mb-4">Nueva sesión</h2>
-        {error && <div className="bg-red-50 text-red-600 text-sm rounded-xl px-4 py-2 mb-3">{error}</div>}
-
-        <label className="block text-xs font-bold text-sub mb-1">JUGADOR *</label>
-        <select className={inp + ' mb-3'} value={playerId} onChange={e => setPlayerId(e.target.value)}>
-          {players.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-        </select>
-
-        <div className="grid grid-cols-2 gap-3 mb-4">
-          <div>
-            <label className="block text-xs font-bold text-sub mb-1">TIPO</label>
-            <select className={inp} value={type} onChange={e => setType(e.target.value)}>
-              {TYPES.map(t => <option key={t}>{t}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-sub mb-1">FECHA</label>
-            <input type="date" className={inp} value={date} onChange={e => setDate(e.target.value)} />
-          </div>
-        </div>
-
-        <div className="border-t border-line pt-4 mb-2">
-          <div className="text-sm font-bold text-ink mb-1">Ejercicios de la sesión</div>
-          <select className={inp + ' mb-2'} onChange={e => applyTemplate(e.target.value)} value="">
-            <option value="">— Plantilla rápida —</option>
-            {Object.entries(TASK_TEMPLATES).map(([cat, list]) => (
-              <optgroup key={cat} label={cat}>
-                {list.map((t, i) => <option key={i} value={`${cat}|${i}`}>{t.t}</option>)}
-              </optgroup>
-            ))}
-          </select>
-          <input className={inp + ' mb-2'} placeholder="Ejercicio" value={ex.title}
-                 onChange={e => setEx({ ...ex, title: e.target.value })} />
-          <div className="grid grid-cols-3 gap-2 mb-2">
-            <input className={inp} placeholder="Series" value={ex.series} onChange={e => setEx({ ...ex, series: e.target.value })} />
-            <input className={inp} placeholder="Reps" value={ex.reps} onChange={e => setEx({ ...ex, reps: e.target.value })} />
-            <input className={inp} placeholder="Peso" value={ex.weight} onChange={e => setEx({ ...ex, weight: e.target.value })} />
-          </div>
-          <input className={inp + ' mb-2'} placeholder="Vídeo (opcional)" value={ex.video_url}
-                 onChange={e => setEx({ ...ex, video_url: e.target.value })} />
-          <button onClick={addEx} className="w-full border border-line rounded-xl py-2 text-sm font-medium text-sub hover:bg-canvas mb-3">
-            + Añadir ejercicio
-          </button>
-          {exList.map((e, i) => (
-            <div key={i} className="flex items-center gap-2 bg-canvas rounded-lg px-3 py-2 mb-1.5 text-sm">
-              <span className="w-5 h-5 rounded bg-campo-blue text-white flex items-center justify-center text-xs font-bold">{i + 1}</span>
-              <span className="flex-1 font-medium">{e.title}</span>
-              <span className="text-xs text-muted">{[e.series && e.series + ' series', e.reps && e.reps + ' reps', e.weight].filter(Boolean).join(' · ')}</span>
-              <button onClick={() => setExList(exList.filter((_, j) => j !== i))} className="text-muted text-lg leading-none">×</button>
-            </div>
-          ))}
-        </div>
-
-        <label className="block text-xs font-bold text-sub mb-1 mt-2">OBJETIVO</label>
-        <input className={inp + ' mb-5'} placeholder="Foco de la sesión" value={goal} onChange={e => setGoal(e.target.value)} />
-
-        <div className="flex justify-end gap-3">
-          <button onClick={onClose} className="px-4 py-2 text-sub font-medium">Cancelar</button>
-          <button onClick={save} disabled={busy} className="px-5 py-2 bg-ink text-white font-semibold rounded-xl disabled:opacity-60">
-            {busy ? '...' : 'Guardar'}
-          </button>
-        </div>
+    <Modal title={editing ? 'Editar sesión' : 'Nueva sesión'} onClose={onClose} wide>
+      <div className="mb-4"><label className="eyebrow block mb-2">Jugador</label>
+        <select className="field" value={playerId} onChange={e => setPlayerId(e.target.value)}>{players.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select></div>
+      <div className="grid grid-cols-2 gap-3 mb-5">
+        <div><label className="eyebrow block mb-2">Tipo</label>
+          <div className="grid grid-cols-2 gap-1.5">
+            {TYPES.map(t => <button key={t} onClick={() => setType(t)} className={`py-2 rounded-lg text-[12px] font-medium transition ${type === t ? 'bg-ink text-paper' : 'bg-canvas text-sub'}`}>{t}</button>)}
+          </div></div>
+        <div><label className="eyebrow block mb-2">Fecha</label><input type="date" className="field" value={date} onChange={e => setDate(e.target.value)} /></div>
       </div>
-    </div>
+
+      <div className="bg-canvas rounded-xl p-4 mb-5">
+        <div className="text-[13px] font-semibold text-ink mb-3">Ejercicios {exList.length > 0 && <span className="text-muted font-normal">· {exList.length}</span>}</div>
+        <select className="field mb-2 bg-paper" onChange={e => applyTemplate(e.target.value)} value="">
+          <option value="">Plantilla rápida…</option>
+          {Object.entries(TASK_TEMPLATES).map(([cat, list]) => (
+            <optgroup key={cat} label={cat}>{list.map((t, i) => <option key={i} value={`${cat}|${i}`}>{t.t}</option>)}</optgroup>
+          ))}
+        </select>
+        <input className="field mb-2 bg-paper" placeholder="Nombre del ejercicio" value={ex.title} onChange={e => setEx({ ...ex, title: e.target.value })} />
+        <div className="grid grid-cols-3 gap-2 mb-2">
+          <input className="field bg-paper" placeholder="Series" value={ex.series} onChange={e => setEx({ ...ex, series: e.target.value })} />
+          <input className="field bg-paper" placeholder="Reps" value={ex.reps} onChange={e => setEx({ ...ex, reps: e.target.value })} />
+          <input className="field bg-paper" placeholder="Peso" value={ex.weight} onChange={e => setEx({ ...ex, weight: e.target.value })} />
+        </div>
+        <input className="field mb-2 bg-paper" placeholder="Enlace de vídeo (opcional)" value={ex.video_url} onChange={e => setEx({ ...ex, video_url: e.target.value })} />
+        <button onClick={addEx} className="btn-line w-full text-[13px]">+ Añadir ejercicio</button>
+
+        {exList.map((e, i) => (
+          <div key={i} className="flex items-center gap-2 bg-paper rounded-lg px-3 py-2 mt-2 text-[13px]">
+            <span className="w-5 h-5 rounded bg-ink text-paper flex items-center justify-center text-[10px] font-bold">{i + 1}</span>
+            <span className="flex-1 font-medium text-ink">{e.title}</span>
+            <span className="text-[11px] text-muted">{[e.series && e.series + '×' + e.reps, e.weight].filter(Boolean).join(' · ')}</span>
+            <button onClick={() => setExList(exList.filter((_, j) => j !== i))} className="text-muted hover:text-ink">✕</button>
+          </div>
+        ))}
+      </div>
+
+      <div className="mb-5"><label className="eyebrow block mb-2">Objetivo</label><input className="field" placeholder="Foco de la sesión" value={goal} onChange={e => setGoal(e.target.value)} /></div>
+      <div className="flex justify-end gap-2"><button onClick={onClose} className="btn-line">Cancelar</button><button onClick={save} disabled={busy} className="btn-ink">{busy ? '...' : editing ? 'Guardar cambios' : 'Crear sesión'}</button></div>
+    </Modal>
   )
 }
