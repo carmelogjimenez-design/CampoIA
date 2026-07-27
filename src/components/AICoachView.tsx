@@ -44,12 +44,14 @@ export default function AICoachView({ players }: Props) {
           question: q,
           playerContext: playerContext(),
           coachName: 'el coach',
-          conversation: chat.map(m => ({ role: m.role, text: m.text })),
+          conversation: chat.map(m => ({ role: m.role, content: m.text })),
         }),
       })
       const json = await res.json()
-      if (!res.ok) throw new Error(json.error || `Error ${res.status}`)
-      setChat(c => [...c, { role: 'assistant', text: json.text || 'Sin respuesta.' }])
+      if (json.error) throw new Error(json.error)
+      if (!res.ok) throw new Error(`Error ${res.status}`)
+      if (!json.text) throw new Error('La IA respondió vacío' + (json.finishReason ? ` (motivo: ${json.finishReason})` : ''))
+      setChat(c => [...c, { role: 'assistant', text: json.text }])
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error al conectar con la IA')
     } finally { setBusy(false) }
