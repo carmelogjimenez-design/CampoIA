@@ -31,7 +31,7 @@ export default function AICoachView({ players }: Props) {
     setChat(c => [...c, { role: 'user', text: q }])
     setQuestion(''); setBusy(true); setError('')
     try {
-      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-coach`
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/hyper-api`
       const res = await fetch(url, {
         method: 'POST',
         headers: {
