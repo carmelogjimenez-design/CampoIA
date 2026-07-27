@@ -34,3 +34,5 @@ export function usePlayerData() {
 
   return { profile, training, sessionEx, tasks, loading, reload }
 }
+
+export type PlayerData = ReturnType<typeof usePlayerData>

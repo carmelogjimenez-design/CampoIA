@@ -149,3 +149,14 @@ export interface VideoAnalysis {
 }
 
 export type UserRole = 'coach' | 'player'
+
+export interface NutritionLog {
+  id: string
+  coach_id: string | null
+  player_id: string
+  date: string
+  meal_type: string | null
+  description: string | null
+  quality: string | null      // good | regular | bad
+  created_at: string
+}

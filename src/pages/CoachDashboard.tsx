@@ -11,6 +11,7 @@ import CalendarView from '../components/CalendarView'
 import VideoAnalysisView from '../components/VideoAnalysisView'
 import MessagesView from '../components/MessagesView'
 import HabitsView from '../components/HabitsView'
+import NutritionView from '../components/NutritionView'
 import AICoachView from '../components/AICoachView'
 import ReportsView from '../components/ReportsView'
 
@@ -18,7 +19,7 @@ const NAV = [
   { section: 'General', items: [['dashboard', 'Dashboard'], ['players', 'Jugadores']] },
   { section: 'Planificación', items: [['training', 'Entrenamientos'], ['calendar', 'Calendario'], ['tasks', 'Tareas']] },
   { section: 'Competición', items: [['matches', 'Partidos'], ['metrics', 'Métricas']] },
-  { section: 'Seguimiento', items: [['habits', 'Bienestar'], ['messages', 'Mensajes'], ['vanalysis', 'Vídeo']] },
+  { section: 'Seguimiento', items: [['habits', 'Bienestar'], ['nutrition', 'Alimentación'], ['messages', 'Mensajes'], ['vanalysis', 'Vídeo']] },
   { section: 'Herramientas', items: [['ai', 'IA Coach'], ['reports', 'Informes']] },
 ]
 
@@ -39,6 +40,7 @@ export default function CoachDashboard() {
       case 'matches': return <MatchesView players={data.players} matches={data.matches} coachId={coachId} onReload={data.reload} />
       case 'metrics': return <MetricsView players={data.players} training={data.training} matches={data.matches} />
       case 'habits': return <HabitsView players={data.players} coachId={coachId} />
+      case 'nutrition': return <NutritionView players={data.players} coachId={coachId} />
       case 'messages': return <MessagesView players={data.players} coachId={coachId} />
       case 'vanalysis': return <VideoAnalysisView players={data.players} coachId={coachId} />
       case 'ai': return <AICoachView players={data.players} />
