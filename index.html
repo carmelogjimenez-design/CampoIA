@@ -2598,7 +2598,7 @@ body{ letter-spacing:-0.005em; }
 <div id="modal-training" style="display:none"><div class="modal-overlay" onclick="if(event.target===this)closeModal('modal-training')"><div class="modal" style="width:440px"><button class="modal-close" onclick="closeModal('modal-training')"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button><div class="modal-title">Nueva sesión</div><div class="form-group"><label class="form-label">Jugador *</label><select class="form-select" id="tr-player"></select></div><div class="form-row"><div class="form-group"><label class="form-label">Tipo *</label><select class="form-select" id="tr-type"><option>Técnica individual</option><option>Físico</option><option>Velocidad</option><option>Fuerza</option><option>Movilidad</option><option>Finalización</option><option>1v1</option><option>Confianza</option><option>Prepartido</option><option>Recuperación</option></select></div><div class="form-group"><label class="form-label">Duración (min) *</label><input class="form-input" id="tr-dur" type="number" min="10" max="180" placeholder="60"></div></div><div class="form-row"><div class="form-group"><label class="form-label">Fecha *</label><input class="form-input" id="tr-date" type="date"></div><div class="form-group"><label class="form-label">RPE (1-10)</label><input class="form-input" id="tr-rpe" type="number" min="1" max="10" placeholder="7"></div></div><div class="form-group"><label class="form-label">Objetivo</label><input class="form-input" id="tr-goal" placeholder="Foco principal de la sesión"></div><div class="form-group"><label class="form-label">Notas</label><input class="form-input" id="tr-notes" placeholder="Observaciones, respuesta del jugador..."></div><div class="modal-actions"><button class="btn-secondary" onclick="closeModal('modal-training')">Cancelar</button><button class="btn-primary" id="save-training-btn" onclick="saveTraining()"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Guardar</button></div></div></div></div>
 
 <!-- Add Task -->
-<div id="modal-task" style="display:none"><div class="modal-overlay" onclick="if(event.target===this)closeModal('modal-task')"><div class="modal" style="width:420px"><button class="modal-close" onclick="closeModal('modal-task')"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button><div class="modal-title">Nueva tarea</div><div class="form-group"><label class="form-label">Jugador *</label><select class="form-select" id="t-player"></select></div><div class="form-group"><label class="form-label">Descripción *</label><input class="form-input" id="t-desc" placeholder="Ej: 20 min de movilidad de cadera"></div><div class="form-row"><div class="form-group"><label class="form-label">Tipo</label><select class="form-select" id="t-type"><option>Técnica</option><option>Físico</option><option>Mental</option><option>Sueño</option><option>Nutrición</option><option>Recuperación</option><option>Vídeo</option><option>Táctica</option></select></div><div class="form-group"><label class="form-label">Prioridad</label><select class="form-select" id="t-priority"><option value="normal">Normal</option><option value="high">Alta</option><option value="urgent">Urgente</option></select></div></div><div class="form-group"><label class="form-label">Fecha límite</label><input class="form-input" id="t-date" type="date"></div><div class="modal-actions"><button class="btn-secondary" onclick="closeModal('modal-task')">Cancelar</button><button class="btn-primary" id="save-task-btn" onclick="saveTask()"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Asignar</button></div></div></div></div>
+<div id="modal-task" style="display:none"><div class="modal-overlay" onclick="if(event.target===this)closeModal('modal-task')"><div class="modal" style="width:470px"><button class="modal-close" onclick="closeModal('modal-task')"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button><div class="modal-title">Nueva tarea</div><div class="form-group"><label class="form-label">Jugador *</label><select class="form-select" id="t-player"></select></div><div class="form-row"><div class="form-group"><label class="form-label">Tipo</label><select class="form-select" id="t-type" onchange="updateTaskTemplates()"><option>Técnica</option><option>Físico</option><option>Mental</option><option>Sueño</option><option>Nutrición</option><option>Recuperación</option><option>Vídeo</option><option>Táctica</option></select></div><div class="form-group"><label class="form-label">Plantilla rápida</label><select class="form-select" id="t-template" onchange="applyTaskTemplate()"><option value="">— Elegir —</option></select></div></div><div class="form-group"><label class="form-label">Título *</label><input class="form-input" id="t-title" placeholder="Ej: Sentadilla con salto"></div><div class="form-group"><label class="form-label">Descripción</label><input class="form-input" id="t-desc" placeholder="Ej: 20 min de movilidad de cadera"></div><div class="form-row" style="grid-template-columns:1fr 1fr 1fr"><div class="form-group"><label class="form-label">Series</label><input class="form-input" id="t-series" placeholder="4"></div><div class="form-group"><label class="form-label">Reps</label><input class="form-input" id="t-reps" placeholder="8-12"></div><div class="form-group"><label class="form-label">Peso</label><input class="form-input" id="t-weight" placeholder="20kg"></div></div><div class="form-group"><label class="form-label">Enlace de vídeo</label><input class="form-input" id="t-video" placeholder="https://youtube.com/..."></div><div class="form-row"><div class="form-group"><label class="form-label">Prioridad</label><select class="form-select" id="t-priority"><option value="normal">Normal</option><option value="high">Alta</option><option value="urgent">Urgente</option></select></div><div class="form-group"><label class="form-label">Fecha límite</label><input class="form-input" id="t-date" type="date"></div></div><div class="modal-actions"><button class="btn-secondary" onclick="closeModal('modal-task')">Cancelar</button><button class="btn-primary" id="save-task-btn" onclick="saveTask()"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Asignar</button></div></div></div></div>
 
 <!-- Video Modal -->
 <div id="modal-video" style="display:none"><div class="modal-overlay" onclick="if(event.target===this)closeVideoModal()"><div class="modal" style="width:680px;padding:22px"><button class="modal-close" onclick="closeVideoModal()"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button><div id="video-player-content"></div><div style="padding:12px 0 2px"><div style="font-size:14px;font-weight:700;color:var(--t0);margin-bottom:2px" id="vmod-title"></div><div style="font-size:11.5px;color:var(--t3)" id="vmod-meta"></div></div></div></div></div>
@@ -5061,10 +5061,23 @@ function renderTaskItem(t){
   const p=getPlayer(t.player_id);
   const c=p?POS_COLORS[p.pos_group||'MED']||POS_COLORS.MED:{bg:'#eff6ff',color:'var(--blue)'};
   const priCls={urgent:'badge-red',high:'badge-amber',normal:'badge-gray'}[t.priority]||'badge-gray';
+  const titulo = t.title || t.description || t.desc || 'Sin título';
+  const hasDesc = t.description && t.title && t.description!==t.title;
+  // Chips de series/reps/peso
+  let srp = '';
+  if(t.series||t.reps||t.weight){
+    const parts=[];
+    if(t.series) parts.push(`${t.series} series`);
+    if(t.reps) parts.push(`${t.reps} reps`);
+    if(t.weight) parts.push(t.weight);
+    srp = `<span class="badge" style="background:#eef2ff;color:#4f46e5;font-size:9.5px">${parts.join(' · ')}</span>`;
+  }
+  const videoLink = t.video_url ? `<a href="${t.video_url}" target="_blank" rel="noopener" class="badge" style="background:#fef2f2;color:#dc2626;font-size:9.5px;text-decoration:none">▶ Vídeo</a>` : '';
   return `<div class="task-item">
     <div class="task-check ${t.done?'done':''}" onclick="toggleTask('${t.id}')"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-    <div style="flex:1"><div style="font-size:12.5px;font-weight:500;${t.done?'text-decoration:line-through;color:var(--t3);':''}">${t.description||t.desc||'Sin descripción'}</div>
-    <div style="display:flex;gap:5px;margin-top:5px;flex-wrap:wrap">${p?`<span class="badge" style="background:${c.bg};color:${c.color};font-size:9.5px">${p.name}</span>`:''}<span class="badge ${priCls}" style="font-size:9.5px">${t.priority||'normal'}</span>${t.type?`<span class="badge badge-gray" style="font-size:9.5px">${t.type}</span>`:''}</div></div>
+    <div style="flex:1"><div style="font-size:12.5px;font-weight:600;${t.done?'text-decoration:line-through;color:var(--t3);':''}">${titulo}</div>
+    ${hasDesc?`<div style="font-size:11px;color:var(--t2);margin-top:2px">${t.description}</div>`:''}
+    <div style="display:flex;gap:5px;margin-top:5px;flex-wrap:wrap">${p?`<span class="badge" style="background:${c.bg};color:${c.color};font-size:9.5px">${p.name}</span>`:''}<span class="badge ${priCls}" style="font-size:9.5px">${t.priority||'normal'}</span>${t.type?`<span class="badge badge-gray" style="font-size:9.5px">${t.type}</span>`:''}${srp}${videoLink}</div></div>
   </div>`;
 }
 
@@ -5085,19 +5098,89 @@ async function toggleTask(id){
   } catch(e){ setSyncBadge(false); }
 }
 
+// ════════════════════════════════════════════════════════════
+// BATERÍA DE TAREAS PREDETERMINADAS por tipo
+// ════════════════════════════════════════════════════════════
+const TASK_TEMPLATES = {
+  'Físico': [
+    {t:'Sentadilla', s:'4', r:'8', w:'moderado', d:'Fuerza tren inferior'},
+    {t:'Peso muerto rumano', s:'3', r:'10', w:'moderado', d:'Cadena posterior'},
+    {t:'Zancadas con mancuernas', s:'3', r:'12/pierna', w:'ligero', d:'Fuerza unilateral'},
+    {t:'Hip thrust', s:'4', r:'10', w:'moderado', d:'Glúteo y potencia'},
+    {t:'Sentadilla búlgara', s:'3', r:'8/pierna', w:'ligero', d:'Fuerza y equilibrio'},
+    {t:'Gemelos de pie', s:'4', r:'15', w:'moderado', d:'Tobillo y salto'},
+    {t:'Plancha frontal', s:'3', r:'40s', w:'corporal', d:'Core estabilidad'},
+    {t:'Plancha lateral', s:'3', r:'30s/lado', w:'corporal', d:'Core lateral'},
+    {t:'Pallof press', s:'3', r:'10/lado', w:'ligero', d:'Anti-rotación'},
+    {t:'Saltos al cajón', s:'4', r:'6', w:'corporal', d:'Potencia'},
+    {t:'Sentadilla con salto', s:'4', r:'8', w:'corporal', d:'Potencia explosiva'},
+    {t:'Sprints 20m', s:'6', r:'20m', w:'—', d:'Velocidad'},
+    {t:'Salidas explosivas 10m', s:'8', r:'10m', w:'—', d:'Aceleración'},
+    {t:'Cambios de dirección en T', s:'5', r:'1', w:'—', d:'Agilidad'},
+    {t:'Series 4x4', s:'4', r:'4min', w:'—', d:'Resistencia aeróbica'},
+    {t:'Nórdicos de isquios', s:'3', r:'6', w:'corporal', d:'Prevención'},
+    {t:'Movilidad de cadera', s:'1', r:'10min', w:'—', d:'Movilidad'},
+    {t:'Foam roller', s:'1', r:'10min', w:'—', d:'Recuperación'}
+  ],
+  'Técnica': [
+    {t:'Control orientado', s:'3', r:'15min', w:'—', d:'Primer toque'},
+    {t:'Pases a pared', s:'4', r:'50', w:'—', d:'Precisión de pase'},
+    {t:'Conducción en slalom', s:'5', r:'1', w:'—', d:'Regate'},
+    {t:'Finalización', s:'3', r:'20 tiros', w:'—', d:'Definición'},
+    {t:'Golpeo a portería', s:'4', r:'10', w:'—', d:'Potencia de tiro'}
+  ],
+  'Táctica': [
+    {t:'Posicionamiento defensivo', s:'1', r:'20min', w:'—', d:'Lectura de juego'},
+    {t:'Desmarques', s:'1', r:'15min', w:'—', d:'Movimiento sin balón'},
+    {t:'Transiciones', s:'1', r:'20min', w:'—', d:'Ataque-defensa'}
+  ],
+  'Mental': [
+    {t:'Visualización pre-partido', s:'1', r:'10min', w:'—', d:'Preparación mental'},
+    {t:'Rutina de respiración', s:'1', r:'5min', w:'—', d:'Gestión de nervios'}
+  ],
+  'Recuperación': [
+    {t:'Estiramientos', s:'1', r:'15min', w:'—', d:'Flexibilidad'},
+    {t:'Baño de contraste', s:'1', r:'10min', w:'—', d:'Recuperación muscular'}
+  ]
+};
+
+function updateTaskTemplates(){
+  const type = document.getElementById('t-type').value;
+  const sel = document.getElementById('t-template');
+  const list = TASK_TEMPLATES[type] || [];
+  sel.innerHTML = '<option value="">— Elegir plantilla —</option>' +
+    list.map((tpl,i)=>`<option value="${i}">${tpl.t}</option>`).join('');
+}
+
+function applyTaskTemplate(){
+  const type = document.getElementById('t-type').value;
+  const idx = document.getElementById('t-template').value;
+  if(idx==='') return;
+  const tpl = (TASK_TEMPLATES[type]||[])[parseInt(idx,10)];
+  if(!tpl) return;
+  document.getElementById('t-title').value = tpl.t;
+  document.getElementById('t-desc').value = tpl.d || '';
+  document.getElementById('t-series').value = tpl.s || '';
+  document.getElementById('t-reps').value = tpl.r || '';
+  document.getElementById('t-weight').value = (tpl.w && tpl.w!=='—') ? tpl.w : '';
+}
+
 function openAddTask(prePlayerId){
   const sel=document.getElementById('t-player');
   sel.innerHTML=S.players.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
   if(prePlayerId)sel.value=prePlayerId;
   document.getElementById('t-date').value=new Date(Date.now()+86400000).toISOString().slice(0,10);
-  ['t-desc'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  ['t-title','t-desc','t-series','t-reps','t-weight','t-video'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  document.getElementById('t-template').value='';
+  updateTaskTemplates();
   document.getElementById('modal-task').style.display='block';
 }
 
 async function saveTask(){
+  const title = (document.getElementById('t-title').value||'').trim();
   const desc = (document.getElementById('t-desc').value||'').trim();
   const playerId = document.getElementById('t-player').value;
-  if(!desc||!playerId){showToast('Añade descripción y jugador','error');return;}
+  if(!title||!playerId){showToast('Añade título y jugador','error');return;}
 
   const btn = document.getElementById('save-task-btn');
   btn.disabled = true;
@@ -5106,10 +5189,15 @@ async function saveTask(){
   const payload = {
     coach_id: COACH_ID,
     player_id: playerId,
-    description: desc,
+    title: title,
+    description: desc || title,
     type: document.getElementById('t-type').value,
     priority: document.getElementById('t-priority').value,
     due_date: document.getElementById('t-date').value||null,
+    series: (document.getElementById('t-series').value||'').trim()||null,
+    reps: (document.getElementById('t-reps').value||'').trim()||null,
+    weight: (document.getElementById('t-weight').value||'').trim()||null,
+    video_url: (document.getElementById('t-video').value||'').trim()||null,
     done: false
   };
 
