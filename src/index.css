@@ -7,11 +7,8 @@
 * { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', system-ui, sans-serif;
-  background: #F5F5F7;
-  color: #1D1D1F;
-  letter-spacing: -0.01em;
+  background: #F5F5F7; color: #1D1D1F; letter-spacing: -0.01em;
 }
-/* Cifras tabulares para datos (el toque Apple) */
 .tnum { font-variant-numeric: tabular-nums; font-feature-settings: 'tnum','cv01'; }
 
 @layer components {
@@ -20,13 +17,16 @@ body {
   .card { @apply bg-paper rounded-2xl shadow-apple; }
   .card-line { @apply bg-paper rounded-2xl border border-line; }
   .btn-ink { @apply bg-ink text-paper font-medium rounded-full px-5 py-2.5 text-sm transition hover:opacity-85 active:scale-[.98] disabled:opacity-40; }
+  .btn-volt { @apply bg-volt text-ink font-semibold rounded-full px-5 py-2.5 text-sm transition hover:brightness-95 active:scale-[.98] disabled:opacity-40; }
   .btn-line { @apply border border-line-strong text-ink font-medium rounded-full px-5 py-2.5 text-sm hover:bg-canvas transition active:scale-[.98]; }
   .field { @apply w-full bg-canvas border border-transparent rounded-xl px-4 py-3 text-[15px] text-ink outline-none transition focus:border-ink/15 focus:bg-paper focus:ring-4 focus:ring-ink/[.04] placeholder:text-faint; }
   .stat-num { @apply tnum font-semibold text-ink tracking-tighter2; }
+  .chip { @apply text-[12px] font-medium px-2.5 py-1 rounded-full bg-canvas text-sub; }
 }
 
-.bar-track { height: 5px; background: #EDEDF0; border-radius: 99px; overflow: hidden; }
+.bar-track { height: 6px; background: #EDEDF0; border-radius: 99px; overflow: hidden; }
 .bar-fill { height: 100%; background: #1D1D1F; border-radius: 99px; transition: width .6s cubic-bezier(.2,.8,.2,1); }
-@media (prefers-reduced-motion: reduce) { .bar-fill, * { transition: none !important; } }
+.bar-fill-volt { height: 100%; background: #C9F31D; border-radius: 99px; transition: width .6s cubic-bezier(.2,.8,.2,1); }
+@media (prefers-reduced-motion: reduce) { .bar-fill, .bar-fill-volt, * { transition: none !important; } }
 
 @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }

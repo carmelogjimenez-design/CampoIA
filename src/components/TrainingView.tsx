@@ -35,7 +35,7 @@ export default function TrainingView({ players, training, sessionEx, coachId, on
                   <div className="font-semibold text-ink">{getPlayerName(players, s.player_id)}</div>
                   <div className="text-xs text-sub">{s.date} · {s.type}</div>
                 </div>
-                <span className={`text-xs px-2 py-1 rounded-full font-medium ${s.completed ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                <span className={`text-xs px-2 py-1 rounded-full font-medium ${s.completed ? 'bg-volt text-ink' : 'bg-amber-100 text-amber-700'}`}>
                   {s.completed ? 'Completado' : 'Pendiente'}
                 </span>
               </div>

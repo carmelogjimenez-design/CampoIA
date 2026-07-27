@@ -49,7 +49,7 @@ export default function MetricsView({ players, training, matches }: Props) {
                   <span className="text-[15px] font-medium text-ink">{r.p.name}</span>
                   <span className="text-[11px] text-muted tnum">{r.mins}′ · {r.train} sesiones</span>
                 </div>
-                <div className="bar-track"><div className="bar-fill" style={{ width: `${(r.total / maxScore) * 100}%` }} /></div>
+                <div className="bar-track"><div className={i === 0 ? "bar-fill-volt" : "bar-fill"} style={{ width: `${(r.total / maxScore) * 100}%` }} /></div>
               </div>
               <div className="stat-num text-[26px] w-14 text-right">{r.total}</div>
             </div>
@@ -121,7 +121,7 @@ function Evolution({ playerId, training }: { playerId: string; training: Trainin
       <div className="flex items-end gap-2 h-32 mb-6">
         {weeks.map((c, i) => (
           <div key={i} className="flex-1 flex flex-col items-center justify-end h-full">
-            <div className="w-full rounded-t-[3px] bg-ink" style={{ height: `${Math.max((c / max) * 100, 2)}%`, opacity: 0.25 + 0.75 * (i / 9) }} />
+            <div className={i === 9 ? "w-full rounded-t-[3px] bg-volt" : "w-full rounded-t-[3px] bg-ink"} style={{ height: `${Math.max((c / max) * 100, 2)}%`, opacity: i === 9 ? 1 : 0.2 + 0.6 * (i / 9) }} />
           </div>
         ))}
       </div>
