@@ -2,9 +2,10 @@ import { useState, useRef, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { Player } from '../types/database'
 import { useAuth } from '../context/AuthContext'
+import ExportPlanModal, { parsePlan, ParsedPlan } from './ExportPlanModal'
 
 interface Props { players: Player[] }
-interface Msg { role: 'user' | 'assistant'; text: string }
+interface Msg { role: 'user' | 'assistant'; text: string; plan?: ParsedPlan | null }
 
 export default function AICoachView({ players }: Props) {
   const { session } = useAuth()
@@ -13,7 +14,9 @@ export default function AICoachView({ players }: Props) {
   const [chat, setChat] = useState<Msg[]>([])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [exportPlan, setExportPlan] = useState<ParsedPlan | null>(null)
   const endRef = useRef<HTMLDivElement>(null)
+  const coachId = session?.user.id ?? ''
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [chat, busy])
 
@@ -40,10 +43,7 @@ export default function AICoachView({ players }: Props) {
           'apikey': import.meta.env.VITE_SUPABASE_KEY,
         },
         body: JSON.stringify({
-          mode: 'chat',
-          question: q,
-          playerContext: playerContext(),
-          coachName: 'el coach',
+          mode: 'chat', question: q, playerContext: playerContext(), coachName: 'el coach',
           conversation: chat.map(m => ({ role: m.role, content: m.text })),
         }),
       })
@@ -51,7 +51,8 @@ export default function AICoachView({ players }: Props) {
       if (json.error) throw new Error(json.error)
       if (!res.ok) throw new Error(`Error ${res.status}`)
       if (!json.text) throw new Error('La IA respondió vacío' + (json.finishReason ? ` (motivo: ${json.finishReason})` : ''))
-      setChat(c => [...c, { role: 'assistant', text: json.text }])
+      const { visible, plan } = parsePlan(json.text)
+      setChat(c => [...c, { role: 'assistant', text: visible, plan }])
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error al conectar con la IA')
     } finally { setBusy(false) }
@@ -81,7 +82,18 @@ export default function AICoachView({ players }: Props) {
             </div>
           )}
           {chat.map((m, i) => (
-            <div key={i} className={`max-w-[75%] px-4 py-3 rounded-2xl text-[14px] whitespace-pre-wrap ${m.role === 'user' ? 'ml-auto bg-ink text-paper' : 'bg-canvas text-ink'}`}>{m.text}</div>
+            <div key={i} className={m.role === 'user' ? 'flex justify-end' : ''}>
+              <div className={`max-w-[75%] px-4 py-3 rounded-2xl text-[14px] whitespace-pre-wrap ${m.role === 'user' ? 'bg-ink text-paper' : 'bg-canvas text-ink'}`}>
+                {m.text}
+                {m.plan && (
+                  <button onClick={() => setExportPlan(m.plan!)}
+                          className="mt-3 flex items-center gap-2 bg-volt text-ink font-semibold rounded-full px-4 py-2 text-[13px] hover:brightness-95 transition">
+                    ⚡ Convertir en plan
+                    <span className="opacity-70 font-normal">({m.plan.sessions.length} sesiones · {m.plan.tasks.length} tareas)</span>
+                  </button>
+                )}
+              </div>
+            </div>
           ))}
           {busy && <div className="bg-canvas text-muted px-4 py-3 rounded-2xl text-[14px] w-fit">Pensando…</div>}
           {error && <div className="bg-canvas border border-line text-ink px-4 py-3 rounded-2xl text-[13px]">⚠ {error}</div>}
@@ -93,6 +105,11 @@ export default function AICoachView({ players }: Props) {
           <button onClick={ask} disabled={busy} className="btn-ink px-6">Enviar</button>
         </div>
       </div>
+
+      {exportPlan && (
+        <ExportPlanModal plan={exportPlan} playerId={playerId} coachId={coachId}
+          onClose={() => setExportPlan(null)} onDone={() => {}} />
+      )}
     </div>
   )
 }
