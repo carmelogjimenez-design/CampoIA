@@ -792,14 +792,14 @@ body{ letter-spacing:-0.005em; }
 /* ═══ CENTRO DE MANDO — ESCRITORIO (≥900px) ═══ */
 #player-sidebar{display:none}
 @media(min-width:900px){
-  #player-shell[style*="flex"]{flex-direction:row;background:#ffffff;min-height:100vh}
-  #player-shell[style*="flex"] #player-sidebar{display:flex;flex-direction:column;width:230px;flex-shrink:0;
+  #player-shell{flex-direction:row;background:#ffffff;min-height:100vh}
+  #player-sidebar{display:flex;flex-direction:column;width:230px;flex-shrink:0;
     background:#f7f8fc;border-right:1px solid #e8ecf2;padding:22px 14px;
     position:sticky;top:0;height:100vh}
-  #player-shell[style*="flex"] #player-main{max-width:none !important;margin:0 !important;flex:1;min-width:0;
+  #player-main{max-width:none !important;margin:0 !important;flex:1;min-width:0;
     background:#ffffff;padding:0}
   #player-shell .topbar{display:none !important}
-  #player-shell[style*="flex"] #player-nav{display:none !important}
+  #player-nav{display:none !important}
 
   .psb-logo{display:flex;align-items:center;gap:9px;padding:0 8px 24px}
   .psb-logo-ic{width:30px;height:30px;border-radius:9px;flex-shrink:0;
