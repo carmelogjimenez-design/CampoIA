@@ -6,35 +6,42 @@ import TrainingView from '../components/TrainingView'
 import TasksView from '../components/TasksView'
 import MatchesView from '../components/MatchesView'
 import MetricsView from '../components/MetricsView'
+import CalendarView from '../components/CalendarView'
+import VideoAnalysisView from '../components/VideoAnalysisView'
+import MessagesView from '../components/MessagesView'
+import HabitsView from '../components/HabitsView'
+import AICoachView from '../components/AICoachView'
+import ReportsView from '../components/ReportsView'
 
 const NAV = [
-  { section: 'Principal', items: [['dashboard', 'Dashboard'], ['players', 'Jugadores']] },
+  { section: 'Principal', items: [['players', 'Jugadores']] },
   { section: 'Planificación', items: [['training', 'Entrenamientos'], ['calendar', 'Calendario'], ['tasks', 'Tareas']] },
   { section: 'Competición', items: [['matches', 'Partidos'], ['metrics', 'Métricas']] },
   { section: 'Seguimiento', items: [['habits', 'Hábitos'], ['messages', 'Mensajes'], ['vanalysis', 'Vídeo análisis']] },
-  { section: 'Herramientas', items: [['ai', 'IA Coach'], ['reports', 'Informes'], ['settings', 'Ajustes']] },
+  { section: 'Herramientas', items: [['ai', 'IA Coach'], ['reports', 'Informes']] },
 ]
 
 export default function CoachDashboard() {
   const { signOut } = useAuth()
   const [view, setView] = useState('players')
   const data = useCoachData()
+  const coachId = data.coachId ?? ''
 
   function render() {
     if (data.loading) return <p className="text-slate-400">Cargando datos…</p>
-    const coachId = data.coachId ?? ''
     switch (view) {
       case 'players': return <PlayersView />
       case 'training': return <TrainingView players={data.players} training={data.training} sessionEx={data.sessionEx} coachId={coachId} onReload={data.reload} />
+      case 'calendar': return <CalendarView players={data.players} training={data.training} />
       case 'tasks': return <TasksView players={data.players} tasks={data.tasks} coachId={coachId} onReload={data.reload} />
       case 'matches': return <MatchesView players={data.players} matches={data.matches} coachId={coachId} onReload={data.reload} />
       case 'metrics': return <MetricsView players={data.players} training={data.training} matches={data.matches} />
-      default: return (
-        <div>
-          <h1 className="font-display font-extrabold text-3xl text-ink capitalize">{view}</h1>
-          <p className="text-slate-500 mt-2">Esta pantalla se migrará en la Fase 6.</p>
-        </div>
-      )
+      case 'habits': return <HabitsView players={data.players} coachId={coachId} />
+      case 'messages': return <MessagesView players={data.players} coachId={coachId} />
+      case 'vanalysis': return <VideoAnalysisView players={data.players} coachId={coachId} />
+      case 'ai': return <AICoachView players={data.players} />
+      case 'reports': return <ReportsView players={data.players} />
+      default: return <PlayersView />
     }
   }
 
