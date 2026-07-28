@@ -74,7 +74,7 @@ export default function AICoachView({ players }: Props) {
       const load = total ? `Carga de entrenamiento: ${total} sesiones registradas (${Object.entries(byType).map(([t, n]) => `${n} ${t}`).join(', ')}).` : 'Carga de entrenamiento: aún sin sesiones registradas, asume carga moderada de un futbolista joven.'
       const ctx = baseContext(player) + load
 
-      const q = `Crea un PLAN NUTRICIONAL MENSUAL para este jugador, teniendo en cuenta su edad, altura, peso y carga de entrenamientos. Estructura por comidas del día (desayuno, media mañana, comida, merienda, cena, pre/post entreno) con ejemplos reales de alimentos, repartido en 4 semanas con variedad. Recuerda que es un deportista joven en crecimiento: enfoque saludable, para crecer y rendir, nunca restrictivo.`
+      const q = `Crea un PLAN NUTRICIONAL MENSUAL COMPLETO para este jugador, teniendo en cuenta su edad, altura, peso y carga de entrenamientos. Desarrolla el CALENDARIO SEMANAL con los 7 días (Lunes a Domingo) uno por uno, cada día con TODAS sus comidas (desayuno, media mañana, comida, merienda, pre-entreno, post-entreno y cena) y platos variados sin repetir entre días. Añade el diagnóstico, las pautas de hidratación, y la rotación para las 4 semanas del mes. Sé extenso y completo, no te quedes corto. Recuerda que es un deportista joven en crecimiento: enfoque saludable, para crecer y rendir, nunca restrictivo.`
       const text = await callAI(q, ctx, [])
       const { visible } = parsePlan(text)
       setChat(c => [...c, { role: 'assistant', text: visible, diet: true }])
