@@ -8,6 +8,7 @@ import AddSessionModal from './AddSessionModal'
 import AddTaskModal from './AddTaskModal'
 import AddMatchModal from './AddMatchModal'
 import Modal from './Modal'
+import AvatarUpload from './AvatarUpload'
 import { PlayerAIModal, ImportSeasonModal, QuickReportModal } from './PlayerActionModals'
 import ExportPlanModal, { ParsedPlan } from './ExportPlanModal'
 
@@ -70,9 +71,7 @@ export default function PlayerDetail({ player: initial, onBack, players = [] }: 
       <div className="card p-8 mb-6">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-5">
-            <div className="w-[80px] h-[80px] rounded-full bg-canvas border border-line flex items-center justify-center font-display font-semibold text-[26px] text-ink overflow-hidden shrink-0">
-              {player.photo_url ? <img src={player.photo_url} className="w-full h-full object-cover" /> : initials(player.name)}
-            </div>
+            <AvatarUpload playerId={player.id} name={player.name} photoUrl={player.photo_url} size={80} onUpdated={load} />
             <div>
               <h1 className="h-page text-[34px] leading-none">{player.name}</h1>
               <p className="text-sub text-[15px] mt-2.5">
