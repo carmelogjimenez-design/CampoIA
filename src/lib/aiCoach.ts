@@ -1,9 +1,10 @@
 import { supabase } from './supabase'
 import { Player } from '../types/database'
+import { posLabel } from './positions'
 
 export function playerContextString(p?: Player): string {
   if (!p) return 'Sin jugador seleccionado.'
-  return `Jugador: ${p.name}. Posición: ${p.pos_group ?? '—'}${p.pos ? ` (${p.pos})` : ''}. `
+  return `Jugador: ${p.name}. Demarcación: ${posLabel(p.pos, p.pos_group)}. `
     + `${p.age ? `Edad: ${p.age}. ` : ''}${p.club ? `Club: ${p.club}. ` : ''}`
     + `${p.foot ? `Pie: ${p.foot}. ` : ''}${p.height_cm ? `Altura: ${p.height_cm}cm. ` : ''}${p.weight_kg ? `Peso: ${p.weight_kg}kg. ` : ''}`
 }

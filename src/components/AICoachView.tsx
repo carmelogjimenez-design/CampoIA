@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { Player } from '../types/database'
 import { useAuth } from '../context/AuthContext'
+import { posLabel } from '../lib/positions'
 import ExportPlanModal, { parsePlan, ParsedPlan } from './ExportPlanModal'
 
 interface Props { players: Player[] }
@@ -23,7 +24,7 @@ export default function AICoachView({ players }: Props) {
   function playerContext(): string {
     const p = players.find(x => x.id === playerId)
     if (!p) return 'Sin jugador seleccionado.'
-    return `Jugador: ${p.name}. Posición: ${p.pos_group ?? '—'}${p.pos ? ` (${p.pos})` : ''}. `
+    return `Jugador: ${p.name}. Demarcación: ${posLabel(p.pos, p.pos_group)}. `
       + `${p.age ? `Edad: ${p.age}. ` : ''}${p.club ? `Club: ${p.club}. ` : ''}`
       + `${p.foot ? `Pie: ${p.foot}. ` : ''}${p.height_cm ? `Altura: ${p.height_cm}cm. ` : ''}${p.weight_kg ? `Peso: ${p.weight_kg}kg. ` : ''}`
   }
