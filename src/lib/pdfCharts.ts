@@ -70,3 +70,42 @@ export function drawBars(doc: jsPDF, x: number, y: number, w: number, attrs: [st
     doc.text(String(Math.round(val)), x + 40 + barMax + 4, yy + 2.5)
   })
 }
+
+// Radar hexagonal (perfil de atributos) para el PDF
+export function drawRadar(doc: jsPDF, cx: number, cy: number, r: number, attrs: [string, number][], color: RGB) {
+  const n = attrs.length
+  if (n < 3) return
+  const pt = (i: number, rad: number): [number, number] => {
+    const a = (-90 + i * 360 / n) * Math.PI / 180
+    return [cx + rad * Math.cos(a), cy + rad * Math.sin(a)]
+  }
+  // rejilla concéntrica
+  doc.setDrawColor(225, 225, 228); doc.setLineWidth(0.3)
+  ;[0.25, 0.5, 0.75, 1].forEach(f => {
+    for (let i = 0; i < n; i++) {
+      const [x1, y1] = pt(i, r * f), [x2, y2] = pt((i + 1) % n, r * f)
+      doc.line(x1, y1, x2, y2)
+    }
+  })
+  // radios
+  for (let i = 0; i < n; i++) { const [x, y] = pt(i, r); doc.line(cx, cy, x, y) }
+  // polígono de valores (relleno translúcido + borde)
+  doc.setFillColor(color[0], color[1], color[2])
+  doc.setGState(new (doc as any).GState({ opacity: 0.25 }))
+  const poly: [number, number][] = attrs.map(([, v], i) => pt(i, r * Math.min(v, 100) / 100))
+  for (let i = 1; i < poly.length - 1; i++) doc.triangle(poly[0][0], poly[0][1], poly[i][0], poly[i][1], poly[i + 1][0], poly[i + 1][1], 'F')
+  doc.setGState(new (doc as any).GState({ opacity: 1 }))
+  doc.setDrawColor(...INK); doc.setLineWidth(0.8)
+  for (let i = 0; i < poly.length; i++) { const a = poly[i], b = poly[(i + 1) % poly.length]; doc.line(a[0], a[1], b[0], b[1]) }
+  // vértices
+  doc.setFillColor(...INK)
+  poly.forEach(([x, y]) => doc.circle(x, y, 0.8, 'F'))
+  // etiquetas
+  doc.setFontSize(6.5); doc.setTextColor(...SUB); doc.setFont('helvetica', 'bold')
+  attrs.forEach(([label], i) => {
+    const [x, y] = pt(i, r + 7)
+    const align = Math.abs(x - cx) < 2 ? 'center' : x > cx ? 'left' : 'right'
+    doc.text(label, x, y, { align: align as any, baseline: 'middle' })
+  })
+  doc.setLineWidth(0.2)
+}

@@ -1,7 +1,7 @@
 import { jsPDF } from 'jspdf'
 import { Player, Match, TrainingSession, CheckIn, NutritionLog } from '../types/database'
 import { isGoalkeeper } from './players'
-import { drawDonut, drawLineChart, drawBars, INK, VOLT, SUB } from './pdfCharts'
+import { drawDonut, drawLineChart, drawBars, drawRadar, INK, VOLT, SUB } from './pdfCharts'
 
 export type ReportType = 'familia' | 'club' | 'agente'
 export type Frequency = 'semanal' | 'mensual' | 'trimestral' | 'anual'
@@ -79,10 +79,17 @@ export function generateReport(type: ReportType, freq: Frequency, d: Data, custo
   drawLineChart(doc, 16, y, W - 90, 34, series, series.map((_, i) => `${i + 1}`), accent)
   drawDonut(doc, W - 32, y + 17, 15, adherence, accent, 'plan'); y += 46
 
-  // ── ATRIBUTOS (editados) ──
+  // ── ATRIBUTOS (editados): radar + barras lado a lado ──
   if (customAttrs.length) {
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(...INK); doc.text('Atributos', 16, y); y += 6
-    drawBars(doc, 16, y, W - 32, customAttrs, accent); y += customAttrs.length * 8 + 8
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(...INK); doc.text('Perfil de atributos', 16, y); y += 8
+    const radarR = 30, radarCx = 46, radarCy = y + radarR + 2
+    if (customAttrs.length >= 3) drawRadar(doc, radarCx, radarCy, radarR, customAttrs, accent)
+    // barras a la derecha del radar
+    const barsX = 92
+    drawBars(doc, barsX, y, W - barsX - 16, customAttrs, accent)
+    const radarH = radarR * 2 + 14
+    const barsH = customAttrs.length * 8
+    y += Math.max(radarH, barsH) + 8
   }
 
   // ── ANÁLISIS ──
