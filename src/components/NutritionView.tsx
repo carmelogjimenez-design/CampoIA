@@ -5,6 +5,7 @@ import { getPlayerName, initials } from '../lib/players'
 import { askAI, playerContextString } from '../lib/aiCoach'
 import { parseDietPlan, saveMealPlan } from '../lib/mealPlan'
 import Modal from './Modal'
+import MealPlanManager from './MealPlanManager'
 
 interface Props { players: Player[]; coachId: string }
 const QEMOJI: Record<string, string> = { good: '🟢', regular: '🟡', bad: '🔴' }
@@ -16,6 +17,9 @@ export default function NutritionView({ players, coachId }: Props) {
   const [importPlayer, setImportPlayer] = useState(players[0]?.id ?? '')
   const [importBusy, setImportBusy] = useState(false)
   const [importMsg, setImportMsg] = useState('')
+  const [planKey, setPlanKey] = useState(0)
+
+  function openImportFor(playerId: string) { setImportPlayer(playerId); setImportMsg(''); setImportOpen(true) }
 
   async function importPlan() {
     const p = players.find(x => x.id === importPlayer)
@@ -30,6 +34,7 @@ export default function NutritionView({ players, coachId }: Props) {
       if (!items.length) { setImportMsg('No pude detectar el calendario. Prueba otra vez.'); setImportBusy(false); return }
       const ok = await saveMealPlan(p.id, coachId, items)
       setImportMsg(ok ? `✓ Plan asignado a ${p.name.split(' ')[0]} (${items.length} comidas).` : 'Error al guardar. ¿Ejecutaste el SQL?')
+      if (ok) setPlanKey(k => k + 1)
     } catch (e) { setImportMsg(e instanceof Error ? e.message : 'Error') } finally { setImportBusy(false) }
   }
 
@@ -73,6 +78,8 @@ export default function NutritionView({ players, coachId }: Props) {
           </div>
         </div>
       </div>
+
+      <MealPlanManager key={planKey} players={players} coachId={coachId} onImport={openImportFor} />
 
       <div className="flex gap-2 flex-wrap mb-5">
         <button onClick={() => setFilter('all')} className={filter === 'all' ? 'chip bg-ink text-paper' : 'chip'}>Todos</button>
