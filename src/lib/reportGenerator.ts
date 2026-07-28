@@ -1,5 +1,6 @@
 import { jsPDF } from 'jspdf'
-import { Player, Match, TrainingSession, CheckIn, NutritionLog } from '../types/database'
+import { Player, Match, TrainingSession, CheckIn, NutritionLog, PhysicalTest } from '../types/database'
+import { TEST_METRICS, improvement } from './physicalTests'
 import { isGoalkeeper } from './players'
 import { drawDonut, drawLineChart, drawBars, drawRadar, INK, VOLT, SUB } from './pdfCharts'
 
@@ -12,10 +13,10 @@ const FREQ_PERIOD: Record<Frequency, string> = { semanal: 'la última semana', m
 const TYPE_LABEL: Record<ReportType, string> = { familia: 'Informe Familiar', club: 'Informe para el Club', agente: 'Dossier de Representación' }
 const TYPE_SUB: Record<ReportType, string> = { familia: 'Progreso y bienestar', club: 'Análisis técnico-táctico', agente: 'Proyección y valor de mercado' }
 
-interface Data { player: Player; matches: Match[]; sessions: TrainingSession[]; checkins: CheckIn[]; nutrition: NutritionLog[] }
+interface Data { player: Player; matches: Match[]; sessions: TrainingSession[]; checkins: CheckIn[]; nutrition: NutritionLog[]; tests?: PhysicalTest[] }
 
 export function generateReport(type: ReportType, freq: Frequency, d: Data, customAttrs: [string, number][]) {
-  const { player, matches, sessions, checkins, nutrition } = d
+  const { player, matches, sessions, checkins, nutrition, tests = [] } = d
   const since = Date.now() - FREQ_DAYS[freq] * 86400000
   const inRange = (dt?: string | null) => dt ? new Date(dt).getTime() >= since : false
 
@@ -102,6 +103,38 @@ export function generateReport(type: ReportType, freq: Frequency, d: Data, custo
     block.lines.forEach(l => { doc.splitTextToSize('•  ' + l, W - 34).forEach((ln: string) => { doc.text(ln, 16, y); y += 5 }) })
     y += 5
   })
+
+  // ── EVOLUCIÓN FÍSICA (test inicial vs final) ──
+  const ini = tests.find(t => t.phase === 'inicial')
+  const fin = tests.find(t => t.phase === 'final')
+  if (ini || fin) {
+    if (y > 235) { doc.addPage(); y = 24 }
+    doc.setDrawColor(230, 230, 230); doc.line(16, y, W - 16, y); y += 8
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(...INK)
+    doc.text('Evolución física (test diagnóstico)', 16, y); y += 7
+    // cabecera de tabla
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(...SUB)
+    doc.text('PRUEBA', 16, y); doc.text('INICIAL', 120, y, { align: 'right' }); doc.text('FINAL', 150, y, { align: 'right' }); doc.text('MEJORA', W - 16, y, { align: 'right' })
+    y += 2; doc.setDrawColor(235, 235, 238); doc.line(16, y, W - 16, y); y += 5
+    TEST_METRICS.forEach(mt => {
+      const vi = (ini?.[mt.key as keyof PhysicalTest] as number | null) ?? null
+      const vf = (fin?.[mt.key as keyof PhysicalTest] as number | null) ?? null
+      if (vi == null && vf == null) return
+      const imp = improvement(mt, vi, vf)
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...INK)
+      doc.text(`${mt.label} (${mt.unit})`, 16, y)
+      doc.setTextColor(...SUB)
+      doc.text(vi != null ? String(vi) : '—', 120, y, { align: 'right' })
+      doc.text(vf != null ? String(vf) : '—', 150, y, { align: 'right' })
+      if (imp != null) {
+        if (imp >= 0) { doc.setTextColor(70, 70, 70); doc.setFont('helvetica', 'bold') }
+        else { doc.setTextColor(150, 150, 150); doc.setFont('helvetica', 'normal') }
+        doc.text(`${imp >= 0 ? '+' : ''}${imp.toFixed(1)}%`, W - 16, y, { align: 'right' })
+      } else { doc.setTextColor(180, 180, 180); doc.text('—', W - 16, y, { align: 'right' }) }
+      y += 6
+    })
+    y += 4
+  }
 
   doc.setFontSize(7.5); doc.setTextColor(160, 160, 160)
   doc.text(`Generado por CAMPO · ${new Date().toLocaleDateString('es-ES')} · ${TYPE_LABEL[type]} ${FREQ_LABEL[freq]} · Documento confidencial`, 16, 288)

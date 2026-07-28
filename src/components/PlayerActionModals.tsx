@@ -89,17 +89,18 @@ export function QuickReportModal({ player, onClose }: { player: Player; onClose:
   async function gen() {
     setBusy(true)
     try {
-      const [mt, tr, ck, nu] = await Promise.all([
+      const [mt, tr, ck, nu, pt] = await Promise.all([
         supabase.from('matches').select('*').eq('player_id', player.id),
         supabase.from('training_sessions').select('*').eq('player_id', player.id),
         supabase.from('check_ins').select('*').eq('player_id', player.id),
         supabase.from('nutrition_logs').select('*').eq('player_id', player.id),
+        supabase.from('physical_tests').select('*').eq('player_id', player.id),
       ])
       const base = player.score ?? 70
       const attrs: [string, number][] = player.ai_attributes && Object.keys(player.ai_attributes).length
         ? Object.entries(player.ai_attributes).map(([k, v]) => [k, Math.round(Number(v))])
         : [['Técnica', base - 4], ['Táctica', base - 7], ['Físico', base - 10], ['Mental', base - 2], ['Velocidad', base - 8]]
-      generateReport(type, freq, { player, matches: mt.data ?? [], sessions: tr.data ?? [], checkins: ck.data ?? [], nutrition: nu.data ?? [] }, attrs)
+      generateReport(type, freq, { player, matches: mt.data ?? [], sessions: tr.data ?? [], checkins: ck.data ?? [], nutrition: nu.data ?? [], tests: pt.data ?? [] }, attrs)
     } finally { setBusy(false); onClose() }
   }
 

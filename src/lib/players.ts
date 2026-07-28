@@ -1,10 +1,10 @@
 import { Player, PosGroup } from '../types/database'
 
 export const POS_COLORS: Record<PosGroup, { bg: string; text: string }> = {
-  POR: { bg: 'bg-amber-100', text: 'text-amber-700' },
-  DEF: { bg: 'bg-blue-100', text: 'text-blue-700' },
-  MED: { bg: 'bg-emerald-100', text: 'text-emerald-700' },
-  DEL: { bg: 'bg-red-100', text: 'text-red-700' },
+  POR: { bg: 'bg-ink', text: 'text-volt' },
+  DEF: { bg: 'bg-canvas', text: 'text-ink' },
+  MED: { bg: 'bg-line', text: 'text-ink' },
+  DEL: { bg: 'bg-ink', text: 'text-paper' },
 }
 
 export function posColor(p: Player) {

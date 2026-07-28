@@ -42,14 +42,15 @@ export default function ReportsView({ players }: Props) {
     if (!selected) return
     setBusy(true)
     try {
-      const [mt, tr, ck, nu] = await Promise.all([
+      const [mt, tr, ck, nu, pt] = await Promise.all([
         supabase.from('matches').select('*').eq('player_id', playerId),
         supabase.from('training_sessions').select('*').eq('player_id', playerId),
         supabase.from('check_ins').select('*').eq('player_id', playerId),
         supabase.from('nutrition_logs').select('*').eq('player_id', playerId),
+        supabase.from('physical_tests').select('*').eq('player_id', playerId),
       ])
       generateReport(type, freq, {
-        player: selected, matches: mt.data ?? [], sessions: tr.data ?? [], checkins: ck.data ?? [], nutrition: nu.data ?? [],
+        player: selected, matches: mt.data ?? [], sessions: tr.data ?? [], checkins: ck.data ?? [], nutrition: nu.data ?? [], tests: pt.data ?? [],
       }, attrs)
     } finally { setBusy(false) }
   }
