@@ -55,8 +55,8 @@ export default function NutritionView({ players, coachId }: Props) {
 
   return (
     <div className="animate-[fadeIn_.4s_ease]">
-      <header className="mb-7 flex items-end justify-between">
-        <div><div className="eyebrow mb-2">Seguimiento</div><h1 className="h-page text-[40px] leading-none">Alimentación</h1></div>
+      <header className="flex flex-col sm:flex-row items-start sm:items-end sm:justify-between gap-4 mb-7">
+        <div><div className="eyebrow mb-2">Seguimiento</div><h1 className="h-page text-[26px] sm:text-[40px] leading-none">Alimentación</h1></div>
         <button onClick={() => setImportOpen(true)} className="btn-volt">📋 Importar plan IA</button>
       </header>
 

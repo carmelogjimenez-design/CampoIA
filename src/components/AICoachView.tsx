@@ -99,7 +99,7 @@ export default function AICoachView({ players }: Props) {
   return (
     <div className="animate-[fadeIn_.4s_ease] flex flex-col h-[calc(100vh-120px)]">
       <header className="mb-5 flex items-end justify-between">
-        <div><div className="eyebrow mb-2">Herramientas</div><h1 className="h-page text-[40px] leading-none">IA Coach</h1></div>
+        <div><div className="eyebrow mb-2">Herramientas</div><h1 className="h-page text-[26px] sm:text-[40px] leading-none">IA Coach</h1></div>
         <select className="bg-paper border border-line rounded-full px-4 py-2 text-[13px] font-medium outline-none" value={playerId} onChange={e => setPlayerId(e.target.value)}>
           {players.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
         </select>

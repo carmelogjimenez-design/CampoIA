@@ -49,8 +49,8 @@ export default function VideoAnalysisView({ players, coachId }: Props) {
 
   return (
     <div className="animate-[fadeIn_.4s_ease]">
-      <header className="flex items-end justify-between mb-7">
-        <div><div className="eyebrow mb-2">Seguimiento</div><h1 className="h-page text-[40px] leading-none">Vídeo análisis</h1></div>
+      <header className="flex flex-col sm:flex-row items-start sm:items-end sm:justify-between gap-4 mb-7">
+        <div><div className="eyebrow mb-2">Seguimiento</div><h1 className="h-page text-[26px] sm:text-[40px] leading-none">Vídeo análisis</h1></div>
         <button onClick={() => setShow(true)} className="btn-ink">+ Nuevo análisis</button>
       </header>
 

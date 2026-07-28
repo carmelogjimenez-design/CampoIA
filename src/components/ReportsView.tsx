@@ -57,7 +57,7 @@ export default function ReportsView({ players }: Props) {
 
   return (
     <div className="animate-[fadeIn_.4s_ease]">
-      <header className="mb-7"><div className="eyebrow mb-2">Herramientas</div><h1 className="h-page text-[40px] leading-none">Informes</h1></header>
+      <header className="mb-7"><div className="eyebrow mb-2">Herramientas</div><h1 className="h-page text-[26px] sm:text-[40px] leading-none">Informes</h1></header>
       <p className="text-sub text-[15px] mb-7">Dossier profesional en PDF con gráficas, análisis adaptado al destinatario y atributos personalizables.</p>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6">

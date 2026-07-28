@@ -26,10 +26,10 @@ export default function PlayersView() {
 
   return (
     <div className="animate-[fadeIn_.4s_ease]">
-      <header className="flex items-end justify-between mb-7">
+      <header className="flex flex-col sm:flex-row items-start sm:items-end sm:justify-between gap-4 mb-7">
         <div>
           <div className="eyebrow mb-2">General</div>
-          <h1 className="h-page text-[40px] leading-none">Jugadores</h1>
+          <h1 className="h-page text-[26px] sm:text-[40px] leading-none">Jugadores</h1>
           <p className="text-muted text-[15px] mt-2.5 tnum">{filtered.length} de {players.length}</p>
         </div>
         <button onClick={() => setShowAdd(true)} className="btn-ink">+ Nuevo jugador</button>

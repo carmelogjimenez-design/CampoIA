@@ -38,7 +38,7 @@ export default function MetricsView({ players, training, matches }: Props) {
 
   return (
     <div className="animate-[fadeIn_.4s_ease]">
-      <header className="mb-7"><div className="eyebrow mb-2">Rendimiento</div><h1 className="h-page text-[40px] leading-none">Métricas</h1></header>
+      <header className="mb-7"><div className="eyebrow mb-2">Rendimiento</div><h1 className="h-page text-[26px] sm:text-[40px] leading-none">Métricas</h1></header>
 
       {/* KPIs del equipo */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -141,5 +141,5 @@ function Mini({ v, l }: { v: number; l: string }) {
   return <div className="text-right w-9"><div className="stat-num text-[18px] leading-none">{v}</div><div className="text-[9px] text-muted mt-0.5 uppercase">{l}</div></div>
 }
 function Empty() {
-  return <div><header className="mb-7"><div className="eyebrow mb-2">Rendimiento</div><h1 className="h-page text-[40px]">Métricas</h1></header><div className="card p-16 text-center text-muted text-[15px]">Añade jugadores para ver las métricas.</div></div>
+  return <div><header className="mb-7"><div className="eyebrow mb-2">Rendimiento</div><h1 className="h-page text-[26px] sm:text-[40px]">Métricas</h1></header><div className="card p-16 text-center text-muted text-[15px]">Añade jugadores para ver las métricas.</div></div>
 }

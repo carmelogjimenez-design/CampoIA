@@ -21,7 +21,7 @@ export default function HabitsView({ players, coachId }: Props) {
 
   return (
     <div className="animate-[fadeIn_.4s_ease]">
-      <header className="mb-7"><div className="eyebrow mb-2">Seguimiento</div><h1 className="h-page text-[40px] leading-none">Bienestar</h1></header>
+      <header className="mb-7"><div className="eyebrow mb-2">Seguimiento</div><h1 className="h-page text-[26px] sm:text-[40px] leading-none">Bienestar</h1></header>
 
       <div className="grid grid-cols-3 gap-4 mb-6">
         <div className="card p-6"><div className="stat-num text-[34px] leading-none">{filtered.length}</div><div className="text-[12px] text-muted mt-1.5">Registros</div></div>

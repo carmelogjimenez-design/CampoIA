@@ -43,7 +43,7 @@ export default function DashboardHome({ data, onGo }: Props) {
   return (
     <div className="animate-[fadeIn_.4s_ease]">
       <header className="mb-7 flex items-end justify-between">
-        <div><div className="eyebrow mb-2">{greeting}</div><h1 className="h-page text-[40px] leading-none">Resumen</h1></div>
+        <div><div className="eyebrow mb-2">{greeting}</div><h1 className="h-page text-[26px] sm:text-[40px] leading-none">Resumen</h1></div>
         <div className="hidden sm:flex gap-2">
           <button onClick={() => onGo('training')} className="btn-volt">+ Nueva sesión</button>
           <button onClick={() => onGo('matches')} className="btn-line">+ Partido</button>

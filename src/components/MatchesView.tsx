@@ -20,10 +20,10 @@ export default function MatchesView({ players, matches, coachId, onReload }: Pro
 
   return (
     <div className="animate-[fadeIn_.4s_ease]">
-      <header className="flex items-end justify-between mb-7">
+      <header className="flex flex-col sm:flex-row items-start sm:items-end sm:justify-between gap-4 mb-7">
         <div>
           <div className="eyebrow mb-2">Competición</div>
-          <h1 className="h-page text-[40px] leading-none">Partidos</h1>
+          <h1 className="h-page text-[26px] sm:text-[40px] leading-none">Partidos</h1>
         </div>
         <button onClick={() => setShow(true)} className="btn-ink">+ Registrar partido</button>
       </header>

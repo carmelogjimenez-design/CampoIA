@@ -27,7 +27,7 @@ export default function CalendarView({ players, training }: Props) {
 
   return (
     <div className="animate-[fadeIn_.4s_ease]">
-      <header className="mb-7"><div className="eyebrow mb-2">Planificación</div><h1 className="h-page text-[40px] leading-none">Calendario</h1></header>
+      <header className="mb-7"><div className="eyebrow mb-2">Planificación</div><h1 className="h-page text-[26px] sm:text-[40px] leading-none">Calendario</h1></header>
       <div className="card p-8">
         <div className="flex items-center justify-between mb-6">
           <div className="font-display font-semibold text-[22px] text-ink tracking-tighter2">{MESES[month]} <span className="text-muted font-normal tnum">{year}</span></div>

@@ -27,7 +27,7 @@ export default function MessagesView({ players, coachId }: Props) {
 
   return (
     <div>
-      <header className="mb-7"><div className="eyebrow mb-2">Comunicación</div><h1 className="h-page text-[40px] leading-none">Mensajes</h1></header>
+      <header className="mb-7"><div className="eyebrow mb-2">Comunicación</div><h1 className="h-page text-[26px] sm:text-[40px] leading-none">Mensajes</h1></header>
       <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] gap-4 md:h-[70vh]">
         <div className="bg-white rounded-2xl border border-line p-2 overflow-x-auto md:overflow-y-auto flex md:block gap-1.5">
           {players.map(p => (
