@@ -76,7 +76,13 @@ export default function CoachDashboard() {
             </div>
           ))}
         </nav>
-        <button onClick={signOut} className="text-[13px] text-muted hover:text-ink px-3 py-2 text-left transition">Cerrar sesión</button>
+        <div className="mt-2">
+          <button onClick={signOut} className="w-full flex items-center justify-center gap-2 border border-line rounded-xl py-2.5 text-[13px] font-medium text-sub hover:bg-canvas hover:text-ink transition">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            Cerrar sesión
+          </button>
+          <div className="text-[10px] text-faint text-center mt-4 leading-relaxed">©2026 CIMA CIRCUS.<br/>Todos los derechos reservados.</div>
+        </div>
       </aside>
       <main className="flex-1 min-w-0 px-8 xl:px-12 py-9">
         <div className="max-w-[1400px] mx-auto">{render()}</div>

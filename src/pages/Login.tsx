@@ -56,6 +56,7 @@ export default function Login() {
             {mode === 'login' ? 'Crear una' : 'Entrar'}
           </button>
         </p>
+        <div className="text-[10px] text-faint text-center mt-8">©2026 CIMA CIRCUS. Todos los derechos reservados.</div>
       </div>
     </div>
   )

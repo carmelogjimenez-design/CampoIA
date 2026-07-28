@@ -32,6 +32,8 @@ export default function PlayerPortal() {
         {tab === 'checkin' && <PortalCheckin pd={pd} />}
         {tab === 'nutrition' && <PortalNutrition pd={pd} />}
         {tab === 'chat' && <PortalChat pd={pd} />}
+
+        <div className="text-[10px] text-faint text-center mt-8">©2026 CIMA CIRCUS. Todos los derechos reservados.</div>
       </div>
 
       {/* Tab bar inferior estilo iOS */}
