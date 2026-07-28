@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Player, TrainingSession, SessionExercise } from '../types/database'
 import { getPlayerName } from '../lib/players'
 import AddSessionModal from './AddSessionModal'
+import { EmptyState } from './States'
 
 interface Props {
   players: Player[]; training: TrainingSession[]; sessionEx: SessionExercise[]
@@ -23,7 +24,7 @@ export default function TrainingView({ players, training, sessionEx, coachId, on
         <button onClick={() => setShowAdd(true)} className="btn-ink">+ Nueva sesión</button>
       </header>
 
-      {training.length === 0 && <div className="card p-12 text-center text-muted text-[14px]">Sin sesiones. Crea la primera.</div>}
+      {training.length === 0 && <EmptyState icon="◷" title="Sin sesiones todavía" description="Planifica la primera sesión de entrenamiento para tus jugadores." actionLabel="+ Nueva sesión" onAction={() => setShowAdd(true)} />}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {training.map(s => {

@@ -1,3 +1,4 @@
+import { LoadingScreen, ErrorState } from '../components/States'
 import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { usePlayerData } from '../hooks/usePlayerData'
@@ -16,8 +17,16 @@ export default function PlayerPortal() {
   const pd = usePlayerData()
   const [tab, setTab] = useState('home')
 
-  if (pd.loading) return <div className="min-h-screen flex items-center justify-center bg-canvas text-muted">Cargando…</div>
-  if (!pd.profile) return <div className="min-h-screen flex items-center justify-center bg-canvas text-sub p-6 text-center">No hay ficha vinculada a tu cuenta.</div>
+  if (pd.loading) return <div className="min-h-screen flex items-center justify-center bg-canvas"><LoadingScreen /></div>
+  if (pd.error) return <div className="min-h-screen flex items-center justify-center bg-canvas"><ErrorState message={pd.error} onRetry={pd.reload} /></div>
+  if (!pd.profile) return (
+    <div className="min-h-screen flex flex-col items-center justify-center bg-canvas text-center p-8">
+      <div className="w-14 h-14 rounded-2xl bg-ink flex items-center justify-center mb-4"><span className="text-volt font-display font-bold text-[20px]">C</span></div>
+      <p className="text-ink font-medium text-[16px] mb-1">Tu cuenta aún no está vinculada</p>
+      <p className="text-sub text-[14px] max-w-xs mb-5">Pídele a tu entrenador que te asocie a tu ficha de jugador para acceder a tu portal.</p>
+      <button onClick={signOut} className="btn-line">Cerrar sesión</button>
+    </div>
+  )
 
   return (
     <div className="min-h-screen bg-canvas">

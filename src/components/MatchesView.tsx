@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { Player, Match } from '../types/database'
 import { getPlayerName, initials } from '../lib/players'
 import AddMatchModal from './AddMatchModal'
+import { EmptyState } from './States'
 
 interface Props { players: Player[]; matches: Match[]; coachId: string; onReload: () => void }
 
@@ -60,7 +61,7 @@ export default function MatchesView({ players, matches, coachId, onReload }: Pro
             <button onClick={() => remove(m)} className="opacity-0 group-hover:opacity-100 text-muted hover:text-ink transition text-[13px]">✕</button>
           </div>
         ))}
-        {!filtered.length && <div className="card p-12 text-center text-muted text-[14px]">Sin partidos registrados. Registra el primero.</div>}
+        {!filtered.length && <EmptyState icon="⚽" title="Sin partidos registrados" description="Anota el primer partido para empezar a seguir la competición." actionLabel="+ Nuevo partido" onAction={() => setShow(true)} />}
       </div>
 
       {show && <AddMatchModal players={players} coachId={coachId} onClose={() => setShow(false)} onSaved={onReload} />}

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
+import { LoadingScreen, ErrorState, FirstRun } from '../components/States'
 import { useCoachData } from '../hooks/useCoachData'
 import DashboardHome from '../components/DashboardHome'
 import PlayersView from '../components/PlayersView'
@@ -31,7 +32,10 @@ export default function CoachDashboard() {
   const coachId = data.coachId ?? ''
 
   function render() {
-    if (data.loading) return <div className="text-muted text-[15px]">Cargando…</div>
+    if (data.loading) return <LoadingScreen />
+    if (data.error) return <ErrorState message={data.error} onRetry={data.reload} />
+    // Onboarding: sin jugadores, invita a crear el primero (salvo en vistas donde no aplica)
+    if (!data.players.length && !['players'].includes(view)) return <FirstRun onAdd={() => setView('players')} />
     switch (view) {
       case 'dashboard': return <DashboardHome data={data} onGo={setView} />
       case 'players': return <PlayersView />
