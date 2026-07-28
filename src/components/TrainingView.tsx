@@ -41,7 +41,13 @@ export default function TrainingView({ players, training, sessionEx, coachId, on
                   <button onClick={() => setEdit(s)} className="opacity-0 group-hover:opacity-100 text-[12px] text-sub hover:text-ink transition">Editar</button>
                 </div>
               </div>
-              {s.goal && <div className="text-[13px] text-sub mb-2">{s.goal}</div>}
+              {s.goal && (
+                <div className="flex items-center gap-2 flex-wrap mb-2">
+                  {/[[]En casa[]]/i.test(s.goal) && <span className="chip bg-volt text-ink">🏠 En casa</span>}
+                  {/[[]En club[]]/i.test(s.goal) && <span className="chip bg-ink text-paper">⚽ En club</span>}
+                  <span className="text-[13px] text-sub">{s.goal.replace(/^\s*[[](En casa|En club)[]]\s*/i, '')}</span>
+                </div>
+              )}
               {exs.length > 0 && (
                 <div className="border-t border-line pt-3 mt-2 space-y-1.5">
                   {exs.map((e, i) => (

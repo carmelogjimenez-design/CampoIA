@@ -26,7 +26,14 @@ export default function PortalTraining({ pd }: { pd: PlayerData }) {
         return (
           <div key={s.id} className="card p-5 mb-3">
             <div className="flex justify-between items-center">
-              <div><div className="font-medium text-[15px] text-ink">{s.type}</div><div className="text-[12px] text-muted tnum">{s.date}{s.goal ? ` · ${s.goal}` : ''}</div></div>
+              <div className="flex-1 min-w-0">
+                <div className="font-medium text-[15px] text-ink flex items-center gap-2 flex-wrap">
+                  {s.type}
+                  {s.goal && /[[]En casa[]]/i.test(s.goal) && <span className="chip bg-volt text-ink">🏠 En casa</span>}
+                  {s.goal && /[[]En club[]]/i.test(s.goal) && <span className="chip bg-ink text-paper">⚽ En club</span>}
+                </div>
+                <div className="text-[12px] text-muted tnum">{s.date}{s.goal ? ` · ${s.goal.replace(/^\s*[[](En casa|En club)[]]\s*/i, '')}` : ''}</div>
+              </div>
               {s.completed ? <span className="chip bg-volt text-ink">✓ Hecho</span>
                 : <button onClick={() => complete(s)} className="btn-ink text-[12px] px-4 py-2">Marcar hecho</button>}
             </div>
