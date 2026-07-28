@@ -179,3 +179,23 @@ export interface PhysicalTest {
   notes: string | null
   created_at: string
 }
+
+export interface MealPlan {
+  id: string
+  coach_id: string | null
+  player_id: string
+  title: string | null
+  active: boolean
+  created_at: string
+}
+
+export interface MealPlanItem {
+  id: string
+  plan_id: string
+  player_id: string | null
+  coach_id: string | null
+  day_index: number
+  meal_type: string
+  description: string | null
+  ord: number
+}

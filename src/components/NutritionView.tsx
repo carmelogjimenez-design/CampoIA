@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { Player, NutritionLog } from '../types/database'
 import { getPlayerName, initials } from '../lib/players'
+import { askAI, playerContextString } from '../lib/aiCoach'
+import { parseDietPlan, saveMealPlan } from '../lib/mealPlan'
+import Modal from './Modal'
 
 interface Props { players: Player[]; coachId: string }
 const QEMOJI: Record<string, string> = { good: '🟢', regular: '🟡', bad: '🔴' }
@@ -9,6 +12,26 @@ const QEMOJI: Record<string, string> = { good: '🟢', regular: '🟡', bad: '�
 export default function NutritionView({ players, coachId }: Props) {
   const [logs, setLogs] = useState<NutritionLog[]>([])
   const [filter, setFilter] = useState('all')
+  const [importOpen, setImportOpen] = useState(false)
+  const [importPlayer, setImportPlayer] = useState(players[0]?.id ?? '')
+  const [importBusy, setImportBusy] = useState(false)
+  const [importMsg, setImportMsg] = useState('')
+
+  async function importPlan() {
+    const p = players.find(x => x.id === importPlayer)
+    if (!p) return
+    setImportBusy(true); setImportMsg('Generando plan con la IA…')
+    try {
+      const { data: sessions } = await supabase.from('training_sessions').select('type').eq('player_id', p.id)
+      const load = sessions?.length ? `Carga: ${sessions.length} sesiones.` : 'Carga moderada.'
+      const q = `Crea un PLAN NUTRICIONAL SEMANAL para este jugador con los 7 días (Lunes a Domingo), cada día con sus comidas (Desayuno, Media mañana, Comida, Merienda, Pre-entreno, Post-entreno, Cena) y platos variados. Deportista joven en crecimiento: saludable, para crecer y rendir, nunca restrictivo.`
+      const text = await askAI({ question: q, playerContext: playerContextString(p) + load })
+      const items = parseDietPlan(text)
+      if (!items.length) { setImportMsg('No pude detectar el calendario. Prueba otra vez.'); setImportBusy(false); return }
+      const ok = await saveMealPlan(p.id, coachId, items)
+      setImportMsg(ok ? `✓ Plan asignado a ${p.name.split(' ')[0]} (${items.length} comidas).` : 'Error al guardar. ¿Ejecutaste el SQL?')
+    } catch (e) { setImportMsg(e instanceof Error ? e.message : 'Error') } finally { setImportBusy(false) }
+  }
 
   async function load() {
     const { data } = await supabase.from('nutrition_logs').select('*').eq('coach_id', coachId).order('date', { ascending: false }).limit(100)
@@ -27,7 +50,10 @@ export default function NutritionView({ players, coachId }: Props) {
 
   return (
     <div className="animate-[fadeIn_.4s_ease]">
-      <header className="mb-7"><div className="eyebrow mb-2">Seguimiento</div><h1 className="h-page text-[40px] leading-none">Alimentación</h1></header>
+      <header className="mb-7 flex items-end justify-between">
+        <div><div className="eyebrow mb-2">Seguimiento</div><h1 className="h-page text-[40px] leading-none">Alimentación</h1></div>
+        <button onClick={() => setImportOpen(true)} className="btn-volt">📋 Importar plan IA</button>
+      </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         <div className="lg:col-span-1 bg-ink rounded-2xl p-7 text-paper flex flex-col justify-between">
@@ -57,6 +83,16 @@ export default function NutritionView({ players, coachId }: Props) {
         {filtered.map(l => <MealCard key={l.id} l={l} players={players} onSaved={load} />)}
         {!filtered.length && <div className="card p-12 text-center text-muted text-[14px]">Sin registros. Los jugadores apuntan su comida desde el portal.</div>}
       </div>
+
+      {importOpen && (
+        <Modal title="Importar plan de alimentación" onClose={() => { setImportOpen(false); setImportMsg('') }}>
+          <p className="text-sub text-[14px] mb-4">La IA genera un plan semanal para el jugador y se lo asigna. Lo verá en su portal para ir marcando cada comida.</p>
+          <label className="eyebrow block mb-2">Jugador</label>
+          <select className="field mb-4" value={importPlayer} onChange={e => setImportPlayer(e.target.value)}>{players.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select>
+          {importMsg && <div className="bg-canvas rounded-xl px-4 py-3 text-[13px] text-ink mb-4">{importMsg}</div>}
+          <div className="flex justify-end gap-2"><button onClick={() => { setImportOpen(false); setImportMsg('') }} className="btn-line">Cerrar</button><button onClick={importPlan} disabled={importBusy} className="btn-volt">{importBusy ? 'Generando…' : 'Generar y asignar'}</button></div>
+        </Modal>
+      )}
     </div>
   )
 }

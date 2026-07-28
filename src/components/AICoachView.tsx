@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext'
 import { posLabel } from '../lib/positions'
 import ExportPlanModal, { parsePlan, ParsedPlan } from './ExportPlanModal'
 import { generateDietPDF } from '../lib/dietPdf'
+import { parseDietPlan, saveMealPlan } from '../lib/mealPlan'
 
 interface Props { players: Player[] }
 interface Msg { role: 'user' | 'assistant'; text: string; plan?: ParsedPlan | null; diet?: boolean }
@@ -17,6 +18,8 @@ export default function AICoachView({ players }: Props) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [exportPlan, setExportPlan] = useState<ParsedPlan | null>(null)
+  const [assigning, setAssigning] = useState(false)
+  const [assignedMsg, setAssignedMsg] = useState('')
   const endRef = useRef<HTMLDivElement>(null)
   const coachId = session?.user.id ?? ''
   const player = players.find(p => p.id === playerId)
@@ -81,6 +84,16 @@ export default function AICoachView({ players }: Props) {
     } catch (e) { setError(e instanceof Error ? e.message : 'Error') } finally { setBusy(false) }
   }
 
+  async function assignMealPlan(dietText: string) {
+    if (!player) return
+    setAssigning(true); setAssignedMsg('')
+    const items = parseDietPlan(dietText)
+    if (!items.length) { setAssignedMsg('No pude detectar el calendario. Pídele que incluya los días (Lunes, Martes…).'); setAssigning(false); return }
+    const ok = await saveMealPlan(player.id, coachId, items)
+    setAssignedMsg(ok ? `✓ Plan asignado a ${player.name.split(' ')[0]} (${items.length} comidas). Ya lo ve en su portal.` : 'Error al guardar. ¿Ejecutaste el SQL de meal plans?')
+    setAssigning(false)
+  }
+
   const suggestions = ['¿Qué plan de trabajo semanal recomiendas?', 'Dame 3 ejercicios específicos para su posición', '¿Cómo puedo motivarle esta semana?']
 
   return (
@@ -110,7 +123,15 @@ export default function AICoachView({ players }: Props) {
               <div className={`max-w-[75%] px-4 py-3 rounded-2xl text-[14px] whitespace-pre-wrap ${m.role === 'user' ? 'bg-ink text-paper' : 'bg-canvas text-ink'}`}>
                 {m.text}
                 {m.plan && <button onClick={() => setExportPlan(m.plan!)} className="mt-3 flex items-center gap-2 bg-volt text-ink font-semibold rounded-full px-4 py-2 text-[13px] hover:brightness-95 transition">⚡ Convertir en plan <span className="opacity-70 font-normal">({m.plan.sessions.length} ses · {m.plan.tasks.length} tareas)</span></button>}
-                {m.diet && player && <button onClick={() => generateDietPDF(player, m.text)} className="mt-3 flex items-center gap-2 bg-ink text-paper font-semibold rounded-full px-4 py-2 text-[13px] hover:brightness-110 transition">↓ Descargar dieta en PDF</button>}
+                {m.diet && player && (
+                  <div className="mt-3 flex flex-col gap-2">
+                    <div className="flex gap-2 flex-wrap">
+                      <button onClick={() => generateDietPDF(player, m.text)} className="flex items-center gap-2 bg-ink text-paper font-semibold rounded-full px-4 py-2 text-[13px] hover:brightness-110 transition">↓ Descargar PDF</button>
+                      <button onClick={() => assignMealPlan(m.text)} disabled={assigning} className="flex items-center gap-2 bg-volt text-ink font-semibold rounded-full px-4 py-2 text-[13px] hover:brightness-95 transition">{assigning ? 'Asignando…' : '📋 Asignar al jugador'}</button>
+                    </div>
+                    {assignedMsg && <div className="text-[12px] text-sub">{assignedMsg}</div>}
+                  </div>
+                )}
               </div>
             </div>
           ))}
