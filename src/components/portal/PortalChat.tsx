@@ -3,7 +3,7 @@ import { supabase } from '../../lib/supabase'
 import { PlayerData } from '../../hooks/usePlayerData'
 import { Message } from '../../types/database'
 
-export default function PortalChat({ pd }: { pd: PlayerData }) {
+export default function PortalChat({ pd, onRead }: { pd: PlayerData; onRead?: () => void }) {
   const { profile } = pd
   const [msgs, setMsgs] = useState<Message[]>([])
   const [text, setText] = useState('')
@@ -14,6 +14,10 @@ export default function PortalChat({ pd }: { pd: PlayerData }) {
       .order('created_at', { ascending: true })
     setMsgs((data as Message[]) ?? [])
     setTimeout(() => endRef.current?.scrollIntoView({ behavior: 'smooth' }), 100)
+    // Marcar como leídos los mensajes del coach
+    const { error } = await supabase.from('messages').update({ read: true })
+      .eq('player_id', profile!.id).eq('from_role', 'coach').eq('read', false)
+    if (!error) onRead?.()
   }
   useEffect(() => { load() }, [])
 

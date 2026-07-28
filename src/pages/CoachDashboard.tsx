@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { LoadingScreen, ErrorState, FirstRun } from '../components/States'
 import { useCoachData } from '../hooks/useCoachData'
@@ -30,6 +31,17 @@ export default function CoachDashboard() {
   const [menuOpen, setMenuOpen] = useState(false)
   const data = useCoachData()
   const coachId = data.coachId ?? ''
+  const [unread, setUnread] = useState(0)
+
+  const loadUnread = async () => {
+    if (!coachId) return
+    const { count } = await supabase.from('messages').select('*', { count: 'exact', head: true })
+      .eq('coach_id', coachId).eq('from_role', 'player').eq('read', false)
+    const n = count ?? 0
+    setUnread(n)
+    try { if ('setAppBadge' in navigator) { n > 0 ? (navigator as any).setAppBadge(n) : (navigator as any).clearAppBadge() } } catch {}
+  }
+  useEffect(() => { loadUnread() }, [coachId, view])
 
   function render() {
     if (data.loading) return <LoadingScreen />
@@ -46,7 +58,7 @@ export default function CoachDashboard() {
       case 'metrics': return <MetricsView players={data.players} training={data.training} matches={data.matches} />
       case 'habits': return <HabitsView players={data.players} coachId={coachId} />
       case 'nutrition': return <NutritionView players={data.players} coachId={coachId} />
-      case 'messages': return <MessagesView players={data.players} coachId={coachId} />
+      case 'messages': return <MessagesView players={data.players} coachId={coachId} onRead={loadUnread} />
       case 'vanalysis': return <VideoAnalysisView players={data.players} coachId={coachId} />
       case 'ai': return <AICoachView players={data.players} />
       case 'reports': return <ReportsView players={data.players} />
@@ -98,6 +110,9 @@ export default function CoachDashboard() {
                             active ? 'bg-paper text-ink font-semibold shadow-apple' : 'text-sub hover:text-ink'}`}>
                     <span className={`w-1.5 h-1.5 rounded-full transition ${active ? 'bg-volt' : 'bg-transparent'}`} />
                     {label}
+                    {id === 'messages' && unread > 0 && (
+                      <span className="ml-auto min-w-[20px] h-5 px-1.5 rounded-full bg-volt text-ink text-[11px] font-bold flex items-center justify-center tabular-nums">{unread > 99 ? '99+' : unread}</span>
+                    )}
                   </button>
                 )
               })}

@@ -1,6 +1,7 @@
 import { LoadingScreen, ErrorState } from '../components/States'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
+import { supabase } from '../lib/supabase'
 import { usePlayerData } from '../hooks/usePlayerData'
 import PortalHome from '../components/portal/PortalHome'
 import PortalTraining from '../components/portal/PortalTraining'
@@ -16,6 +17,15 @@ export default function PlayerPortal() {
   const { signOut } = useAuth()
   const pd = usePlayerData()
   const [tab, setTab] = useState('home')
+  const [unreadChat, setUnreadChat] = useState(0)
+
+  const loadUnreadChat = async () => {
+    if (!pd.profile) return
+    const { count } = await supabase.from('messages').select('*', { count: 'exact', head: true })
+      .eq('player_id', pd.profile.id).eq('from_role', 'coach').eq('read', false)
+    setUnreadChat(count ?? 0)
+  }
+  useEffect(() => { loadUnreadChat() }, [pd.profile, tab])
 
   if (pd.loading) return <div className="min-h-screen flex items-center justify-center bg-canvas"><LoadingScreen /></div>
   if (pd.error) return <div className="min-h-screen flex items-center justify-center bg-canvas"><ErrorState message={pd.error} onRetry={pd.reload} /></div>
@@ -40,7 +50,7 @@ export default function PlayerPortal() {
         {tab === 'training' && <PortalTraining pd={pd} />}
         {tab === 'checkin' && <PortalCheckin pd={pd} />}
         {tab === 'nutrition' && <PortalNutrition pd={pd} />}
-        {tab === 'chat' && <PortalChat pd={pd} />}
+        {tab === 'chat' && <PortalChat pd={pd} onRead={loadUnreadChat} />}
 
         <div className="text-[10px] text-faint text-center mt-8">©2026 CIMA CIRCUS. Todos los derechos reservados.</div>
       </div>
@@ -50,9 +60,12 @@ export default function PlayerPortal() {
         <div className="max-w-[560px] mx-auto grid grid-cols-5">
           {TABS.map(([id, label]) => (
             <button key={id} onClick={() => setTab(id)}
-                    className={`py-3 flex flex-col items-center gap-1 transition ${tab === id ? 'text-ink' : 'text-muted'}`}>
+                    className={`relative py-3 flex flex-col items-center gap-1 transition ${tab === id ? 'text-ink' : 'text-muted'}`}>
               <span className={`w-1.5 h-1.5 rounded-full transition ${tab === id ? 'bg-volt' : 'bg-transparent'}`} />
               <span className="text-[11px] font-medium">{label}</span>
+              {id === 'chat' && unreadChat > 0 && (
+                <span className="absolute top-1.5 right-[22%] min-w-[16px] h-4 px-1 rounded-full bg-volt text-ink text-[10px] font-bold flex items-center justify-center tabular-nums">{unreadChat > 9 ? '9+' : unreadChat}</span>
+              )}
             </button>
           ))}
         </div>

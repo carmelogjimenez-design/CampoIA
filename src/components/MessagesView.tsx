@@ -3,9 +3,9 @@ import { supabase } from '../lib/supabase'
 import { Player, Message } from '../types/database'
 import { initials } from '../lib/players'
 
-interface Props { players: Player[]; coachId: string }
+interface Props { players: Player[]; coachId: string; onRead?: () => void }
 
-export default function MessagesView({ players, coachId }: Props) {
+export default function MessagesView({ players, coachId, onRead }: Props) {
   const [selected, setSelected] = useState<Player | null>(players[0] ?? null)
   const [msgs, setMsgs] = useState<Message[]>([])
   const [text, setText] = useState('')
@@ -14,6 +14,10 @@ export default function MessagesView({ players, coachId }: Props) {
     const { data } = await supabase.from('messages').select('*')
       .eq('coach_id', coachId).eq('player_id', playerId).order('created_at', { ascending: true })
     setMsgs((data as Message[]) ?? [])
+    // Marcar como leídos los mensajes del jugador y refrescar el badge
+    const { error } = await supabase.from('messages').update({ read: true })
+      .eq('coach_id', coachId).eq('player_id', playerId).eq('from_role', 'player').eq('read', false)
+    if (!error) onRead?.()
   }
   useEffect(() => { if (selected) load(selected.id) }, [selected, coachId])
 
