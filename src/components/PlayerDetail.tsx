@@ -9,6 +9,7 @@ import AddTaskModal from './AddTaskModal'
 import AddMatchModal from './AddMatchModal'
 import Modal from './Modal'
 import AvatarUpload from './AvatarUpload'
+import PhysicalTestModal from './PhysicalTestModal'
 import { PlayerAIModal, ImportSeasonModal, QuickReportModal } from './PlayerActionModals'
 import ExportPlanModal, { ParsedPlan } from './ExportPlanModal'
 
@@ -21,7 +22,7 @@ export default function PlayerDetail({ player: initial, onBack, players = [] }: 
   const [matches, setMatches] = useState<Match[]>([])
   const [sessions, setSessions] = useState<TrainingSession[]>([])
   const [tasks, setTasks] = useState<Task[]>([])
-  const [modal, setModal] = useState<null | 'edit' | 'session' | 'task' | 'match' | 'ai' | 'import' | 'report'>(null)
+  const [modal, setModal] = useState<null | 'edit' | 'session' | 'task' | 'match' | 'ai' | 'import' | 'report' | 'test'>(null)
   const [exportPlan, setExportPlan] = useState<ParsedPlan | null>(null)
   const gk = isGoalkeeper(player)
   const single = players.length ? players : [player]
@@ -59,7 +60,7 @@ export default function PlayerDetail({ player: initial, onBack, players = [] }: 
   const maxAttr = Math.max(...Object.values(attrs).map(Number))
 
   const actions: [string, typeof modal, string][] = [
-    ['+ Entrenamiento', 'session', 'ink'], ['+ Tarea', 'task', 'line'], ['+ Partido', 'match', 'line'],
+    ['+ Entrenamiento', 'session', 'ink'], ['+ Tarea', 'task', 'line'], ['+ Partido', 'match', 'line'], ['Test físico', 'test', 'line'],
     ['Análisis IA', 'ai', 'line'], ['Importar temporada', 'import', 'line'], ['Descargar informe', 'report', 'line'],
   ]
 
@@ -173,6 +174,7 @@ export default function PlayerDetail({ player: initial, onBack, players = [] }: 
       {modal === 'session' && <AddSessionModal players={single} coachId={coachId} prePlayerId={player.id} onClose={() => setModal(null)} onSaved={load} />}
       {modal === 'task' && <AddTaskModal players={single} coachId={coachId} prePlayerId={player.id} onClose={() => setModal(null)} onSaved={load} />}
       {modal === 'match' && <AddMatchModal players={single} coachId={coachId} prePlayerId={player.id} onClose={() => setModal(null)} onSaved={load} />}
+      {modal === 'test' && <PhysicalTestModal player={player} coachId={coachId} onClose={() => setModal(null)} />}
       {modal === 'ai' && <PlayerAIModal player={player} onClose={() => setModal(null)} onExport={p => { setModal(null); setExportPlan(p) }} />}
       {modal === 'import' && <ImportSeasonModal player={player} onClose={() => setModal(null)} />}
       {modal === 'report' && <QuickReportModal player={player} onClose={() => setModal(null)} />}

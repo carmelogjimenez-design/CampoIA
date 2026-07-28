@@ -162,3 +162,20 @@ export interface NutritionLog {
   coach_feedback: string | null
   created_at: string
 }
+
+export interface PhysicalTest {
+  id: string
+  coach_id: string | null
+  player_id: string
+  phase: 'inicial' | 'final'
+  date: string
+  vertical_jump: number | null
+  horizontal_jump: number | null
+  sprint_10m: number | null
+  sprint_30m: number | null
+  agility: number | null
+  flexibility: number | null
+  strength: number | null
+  notes: string | null
+  created_at: string
+}
