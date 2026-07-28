@@ -30,7 +30,7 @@ export default function PlayerPortal() {
 
   return (
     <div className="min-h-screen bg-canvas">
-      <div className="max-w-[560px] mx-auto px-5 pt-7 pb-28 animate-[fadeIn_.4s_ease]">
+      <div className="max-w-[560px] mx-auto px-5 pb-28 animate-[fadeIn_.4s_ease]" style={{ paddingTop: 'max(1.75rem, calc(env(safe-area-inset-top) + 0.75rem))' }}>
         <div className="flex justify-between items-center mb-6">
           <span className="font-display font-bold text-[19px] text-ink tracking-tightest">CAMPO</span>
           <button onClick={signOut} className="text-[13px] text-muted">Salir</button>
@@ -46,7 +46,7 @@ export default function PlayerPortal() {
       </div>
 
       {/* Tab bar inferior estilo iOS */}
-      <div className="fixed bottom-0 left-0 right-0 bg-paper/80 backdrop-blur-xl border-t border-line">
+      <div className="fixed bottom-0 left-0 right-0 bg-paper/80 backdrop-blur-xl border-t border-line" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
         <div className="max-w-[560px] mx-auto grid grid-cols-5">
           {TABS.map(([id, label]) => (
             <button key={id} onClick={() => setTab(id)}

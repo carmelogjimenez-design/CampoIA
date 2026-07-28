@@ -59,21 +59,24 @@ export default function CoachDashboard() {
   return (
     <div className="min-h-screen bg-canvas lg:flex">
       {/* Top bar solo móvil */}
-      <div className="lg:hidden sticky top-0 z-30 flex items-center justify-between px-4 h-14 bg-paper/85 backdrop-blur-xl border-b border-line">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-[9px] bg-ink flex items-center justify-center"><span className="text-paper font-display font-bold text-[13px] tracking-tightest">C</span></div>
-          <span className="font-display font-bold text-[15px] text-ink tracking-tightest">CAMPO</span>
+      <div className="lg:hidden sticky top-0 z-30 bg-paper/85 backdrop-blur-xl border-b border-line" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+        <div className="flex items-center justify-between px-4 h-14">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-[9px] bg-ink flex items-center justify-center"><span className="text-paper font-display font-bold text-[13px] tracking-tightest">C</span></div>
+            <span className="font-display font-bold text-[15px] text-ink tracking-tightest">CAMPO</span>
+          </div>
+          <button onClick={() => setMenuOpen(true)} className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-canvas transition">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
         </div>
-        <button onClick={() => setMenuOpen(true)} className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-canvas transition">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-        </button>
       </div>
 
       {/* Overlay móvil */}
       {menuOpen && <div className="lg:hidden fixed inset-0 bg-ink/40 z-40 animate-[fadeIn_.2s_ease]" onClick={() => setMenuOpen(false)} />}
 
       {/* Sidebar: drawer en móvil, fijo en desktop */}
-      <aside className={`fixed lg:sticky top-0 z-50 lg:z-auto h-screen w-[260px] lg:w-[228px] shrink-0 flex flex-col px-4 py-6 bg-canvas border-r border-line/60 transition-transform duration-300 lg:translate-x-0 ${menuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <aside style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}
+             className={`fixed lg:sticky top-0 z-50 lg:z-auto h-screen w-[260px] lg:w-[228px] shrink-0 flex flex-col px-4 pb-6 bg-canvas border-r border-line/60 transition-transform duration-300 lg:translate-x-0 ${menuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="flex items-center justify-between px-3 pb-8">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-[10px] bg-ink flex items-center justify-center">
