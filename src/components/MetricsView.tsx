@@ -93,12 +93,12 @@ export default function MetricsView({ players, training, matches }: Props) {
         <div className="flex items-baseline justify-between mb-6"><h2 className="font-display font-semibold text-[19px] tracking-tighter2">Competición</h2><span className="text-[12px] text-muted">{totMins} minutos totales</span></div>
         <div className="divide-y divide-line">
           {[...all].sort((a, b) => (b.goals + b.assists) - (a.goals + a.assists)).map(s => (
-            <div key={s.p.id} className="py-4 first:pt-0 last:pb-0 flex items-center justify-between gap-6">
-              <span className="text-[15px] font-medium text-ink flex items-center gap-2.5">
-                <span className="w-7 h-7 rounded-full bg-canvas flex items-center justify-center text-[9px] font-semibold text-sub overflow-hidden">{s.p.photo_url ? <img src={s.p.photo_url} className="w-full h-full object-cover" /> : initials(s.p.name)}</span>
+            <div key={s.p.id} className="py-4 first:pt-0 last:pb-0 flex items-center justify-between gap-3">
+              <span className="text-[14px] sm:text-[15px] font-medium text-ink flex items-center gap-2.5 min-w-0 truncate">
+                <span className="w-7 h-7 shrink-0 rounded-full bg-canvas flex items-center justify-center text-[9px] font-semibold text-sub overflow-hidden">{s.p.photo_url ? <img src={s.p.photo_url} className="w-full h-full object-cover" /> : initials(s.p.name)}</span>
                 {s.p.name}
               </span>
-              <div className="flex gap-7">
+              <div className="flex gap-3.5 sm:gap-7 shrink-0">
                 <Mini v={s.called} l="PJ" /><Mini v={s.mins} l="Min" /><Mini v={s.goals} l="Gol" /><Mini v={s.assists} l="Ast" />
                 {s.gk && <Mini v={s.cleansheets} l="P0" />}
               </div>

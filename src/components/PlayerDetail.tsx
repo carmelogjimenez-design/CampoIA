@@ -69,12 +69,12 @@ export default function PlayerDetail({ player: initial, onBack, players = [] }: 
       <button onClick={onBack} className="text-[13px] text-muted hover:text-ink mb-6 transition">← Jugadores</button>
 
       {/* HERO */}
-      <div className="card p-8 mb-6">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-5">
+      <div className="card p-5 sm:p-8 mb-6">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-3 sm:gap-5 min-w-0">
             <AvatarUpload playerId={player.id} name={player.name} photoUrl={player.photo_url} size={80} onUpdated={load} />
             <div>
-              <h1 className="h-page text-[34px] leading-none">{player.name}</h1>
+              <h1 className="h-page text-[24px] sm:text-[34px] leading-none">{player.name}</h1>
               <p className="text-sub text-[15px] mt-2.5">
                 {player.pos_group ?? '—'}{player.pos ? ` · ${player.pos}` : ''}{player.age ? ` · ${player.age} años` : ''}
                 {player.foot ? ` · ${player.foot}` : ''}{player.club ? ` · ${player.club}` : ''}
@@ -86,7 +86,7 @@ export default function PlayerDetail({ player: initial, onBack, players = [] }: 
               )}
             </div>
           </div>
-          <button onClick={() => setModal('edit')} className="btn-line text-[13px] px-4 py-2">Editar</button>
+          <button onClick={() => setModal('edit')} className="btn-line text-[13px] px-4 py-2 shrink-0">Editar</button>
         </div>
 
         {/* Barra de acciones */}

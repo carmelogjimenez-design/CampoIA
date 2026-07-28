@@ -47,7 +47,7 @@ export default function CalendarView({ players, training }: Props) {
           ))}
         </div>
 
-        <div className="grid grid-cols-7 gap-2">
+        <div className="grid grid-cols-7 gap-1 sm:gap-2">
           {DOWS.map((d, i) => <div key={i} className="text-center eyebrow pb-2">{d}</div>)}
           {cells.map((day, i) => {
             if (day === null) return <div key={i} />
@@ -55,7 +55,7 @@ export default function CalendarView({ players, training }: Props) {
             const sesiones = byDate[dateStr] ?? []
             const isToday = dateStr === todayStr
             return (
-              <div key={i} className={`min-h-[92px] rounded-xl p-2 flex flex-col transition ${isToday ? 'ring-2 ring-ink' : sesiones.length ? 'bg-canvas' : 'bg-canvas/40'}`}>
+              <div key={i} className={`min-h-[64px] sm:min-h-[92px] rounded-lg sm:rounded-xl p-1 sm:p-2 flex flex-col transition ${isToday ? 'ring-2 ring-ink' : sesiones.length ? 'bg-canvas' : 'bg-canvas/40'}`}>
                 <div className={`text-[13px] tnum font-medium mb-1 ${isToday ? 'text-ink' : 'text-sub'}`}>{day}</div>
                 <div className="flex flex-col gap-1 overflow-hidden">
                   {sesiones.slice(0, 3).map(s => (

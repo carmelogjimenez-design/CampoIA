@@ -28,17 +28,17 @@ export default function MessagesView({ players, coachId }: Props) {
   return (
     <div>
       <h1 className="font-display font-extrabold text-3xl text-ink mb-6">Mensajes</h1>
-      <div className="grid grid-cols-[220px_1fr] gap-4 h-[70vh]">
-        <div className="bg-white rounded-2xl border border-line p-2 overflow-y-auto">
+      <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] gap-4 md:h-[70vh]">
+        <div className="bg-white rounded-2xl border border-line p-2 overflow-x-auto md:overflow-y-auto flex md:block gap-1.5">
           {players.map(p => (
             <button key={p.id} onClick={() => setSelected(p)}
-                    className={`w-full flex items-center gap-2 p-2 rounded-xl text-left ${selected?.id === p.id ? 'bg-canvas' : ''}`}>
-              <div className="w-8 h-8 rounded-full bg-canvas flex items-center justify-center text-xs font-bold text-sub">{initials(p.name)}</div>
-              <span className="text-sm font-medium truncate">{p.name}</span>
+                    className={`shrink-0 md:w-full flex items-center gap-2 p-2 rounded-xl text-left ${selected?.id === p.id ? 'bg-canvas' : ''}`}>
+              <div className="w-8 h-8 rounded-full bg-canvas flex items-center justify-center text-xs font-bold text-sub shrink-0">{initials(p.name)}</div>
+              <span className="text-sm font-medium truncate hidden md:inline">{p.name}</span>
             </button>
           ))}
         </div>
-        <div className="bg-white rounded-2xl border border-line flex flex-col">
+        <div className="bg-white rounded-2xl border border-line flex flex-col h-[60vh] md:h-auto">
           <div className="flex-1 overflow-y-auto p-4 space-y-2">
             {msgs.map(m => (
               <div key={m.id} className={`max-w-[70%] px-3 py-2 rounded-2xl text-sm ${m.sender === 'coach' ? 'ml-auto bg-ink text-white' : 'bg-canvas text-ink'}`}>
