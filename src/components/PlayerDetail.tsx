@@ -15,9 +15,9 @@ import ExportPlanModal, { ParsedPlan } from './ExportPlanModal'
 import PlayerAccessModal from './PlayerAccessModal'
 import AttributesCard from './AttributesCard'
 
-interface Props { player: Player; onBack: () => void; players?: Player[] }
+interface Props { player: Player; onBack: () => void; players?: Player[]; onDeleted?: () => void }
 
-export default function PlayerDetail({ player: initial, onBack, players = [] }: Props) {
+export default function PlayerDetail({ player: initial, onBack, players = [], onDeleted }: Props) {
   const { session } = useAuth()
   const coachId = session?.user.id ?? ''
   const [player, setPlayer] = useState(initial)
@@ -81,6 +81,12 @@ export default function PlayerDetail({ player: initial, onBack, players = [] }: 
             <div>
               <div className="flex items-center gap-3 flex-wrap">
                 <h1 className="h-page text-[24px] sm:text-[34px] leading-none">{player.name}</h1>
+                {player.rffm_id && (
+                  <a href={`https://www.rffm.es/fichajugador/${player.rffm_id}`} target="_blank" rel="noreferrer"
+                     className="chip hover:bg-line transition shrink-0" title="Abrir su ficha en la federación">
+                    Ficha RFFM ↗
+                  </a>
+                )}
                 <button onClick={() => setModal('access')}
                         className="chip flex items-center gap-1.5 hover:bg-line transition shrink-0">
                   <span className={`w-1.5 h-1.5 rounded-full ${access.dot}`} />
@@ -168,7 +174,8 @@ export default function PlayerDetail({ player: initial, onBack, players = [] }: 
 
       {/* Modales */}
       {modal === 'access' && <PlayerAccessModal player={player} onClose={() => setModal(null)} onChanged={load} />}
-      {modal === 'edit' && <EditPlayerModal player={player} onClose={() => setModal(null)} onSaved={load} />}
+      {modal === 'edit' && <EditPlayerModal player={player} onClose={() => setModal(null)} onSaved={load}
+                                            onDeleted={() => { onDeleted?.(); onBack() }} />}
       {modal === 'session' && <AddSessionModal players={single} coachId={coachId} prePlayerId={player.id} onClose={() => setModal(null)} onSaved={load} />}
       {modal === 'task' && <AddTaskModal players={single} coachId={coachId} prePlayerId={player.id} onClose={() => setModal(null)} onSaved={load} />}
       {modal === 'match' && <AddMatchModal players={single} coachId={coachId} prePlayerId={player.id} onClose={() => setModal(null)} onSaved={load} />}

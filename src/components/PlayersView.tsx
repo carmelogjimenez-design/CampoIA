@@ -8,7 +8,7 @@ import PlayerDetail from './PlayerDetail'
 const POS: (PosGroup | 'all')[] = ['all', 'POR', 'DEF', 'MED', 'DEL']
 
 export default function PlayersView() {
-  const { players, loading, error, addPlayer } = usePlayers()
+  const { players, loading, error, addPlayer, reload } = usePlayers()
   const [showAdd, setShowAdd] = useState(false)
   const [selected, setSelected] = useState<Player | null>(null)
   const [pos, setPos] = useState<PosGroup | 'all'>('all')
@@ -22,7 +22,7 @@ export default function PlayersView() {
     (!q || p.name.toLowerCase().includes(q.toLowerCase()))
   )
 
-  if (selected) return <PlayerDetail player={selected} onBack={() => setSelected(null)} players={players} />
+  if (selected) return <PlayerDetail player={selected} onBack={() => setSelected(null)} players={players} onDeleted={reload} />
 
   return (
     <div className="animate-[fadeIn_.4s_ease]">
