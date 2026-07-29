@@ -63,3 +63,20 @@ export function formatDue(due: string): string {
   if (diff <= 7) return `en ${diff} días`
   return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
 }
+
+/**
+ * ¿Es un enlace a una página de resultados de búsqueda, en vez de a un vídeo?
+ * Los enlaces que propone la IA son búsquedas, no vídeos concretos. Al coach
+ * le sirven para elegir uno; al jugador NO se le manda a rebuscar en YouTube:
+ * solo ve vídeos que has elegido tú.
+ */
+export function isSearchUrl(url: string | null | undefined): boolean {
+  if (!url) return false
+  return /youtube\.com\/results|google\.[a-z.]+\/search|bing\.com\/search|\/search\?/i.test(url)
+}
+
+/** Un vídeo de verdad, elegido por el coach. Es lo único que ve el jugador. */
+export function playableVideo(url: string | null | undefined): string | null {
+  if (!url || isSearchUrl(url)) return null
+  return url
+}
