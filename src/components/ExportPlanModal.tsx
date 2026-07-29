@@ -2,8 +2,12 @@ import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import Modal from './Modal'
 
+function youtubeSearch(q: string) {
+  return `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`
+}
+
 export interface ParsedSession { type: string; goal: string; exercises: { title: string; series?: string; reps?: string; weight?: string }[] }
-export interface ParsedTask { title: string; type: string }
+export interface ParsedTask { title: string; type: string; video_url?: string; search?: string }
 export interface ParsedPlan { sessions: ParsedSession[]; tasks: ParsedTask[] }
 
 interface Props { plan: ParsedPlan; playerId: string; coachId: string; onClose: () => void; onDone: () => void }
@@ -41,6 +45,9 @@ export default function ExportPlanModal({ plan, playerId, coachId, onClose, onDo
       await supabase.from('tasks').insert(tasksToAdd.map(t => ({
         coach_id: coachId, player_id: playerId, title: t.title, description: t.title,
         type: t.type || 'Mental', priority: 'normal', done: false,
+        // Si la IA sugiere una búsqueda en vez de una URL, guardamos la búsqueda:
+        // un enlace real siempre, nunca un vídeo inventado.
+        video_url: t.video_url ?? (t.search ? youtubeSearch(t.search) : null),
       })))
     }
     setBusy(false); setDone(true)

@@ -111,9 +111,10 @@ export default function PortalHome({ pd, onGo }: { pd: PlayerData; onGo: (t: str
       {/* Accesos */}
       <div className="grid grid-cols-2 gap-3">
         <Access label="Mis entrenos" sub={`${pending} pendientes`} onClick={() => onGo('training')} />
-        <Access label="¿Cómo estás hoy?" sub="Registra tu día" onClick={() => onGo('checkin')} accent />
+        <Access label="Mis tareas" sub={pendingTasks ? `${pendingTasks} por hacer` : 'Todo hecho'} onClick={() => onGo('training')} accent={pendingTasks > 0} />
+        <Access label="¿Cómo estás hoy?" sub="Registra tu día" onClick={() => onGo('checkin')} />
         <Access label="Mi comida" sub="Apunta lo que comes" onClick={() => onGo('nutrition')} />
-        <Access label="Tu coach" sub={pendingTasks ? `${pendingTasks} tareas` : 'Mensajes'} onClick={() => onGo('chat')} />
+        <Access label="Tu coach" sub="Mensajes" onClick={() => onGo('chat')} />
       </div>
     </div>
   )

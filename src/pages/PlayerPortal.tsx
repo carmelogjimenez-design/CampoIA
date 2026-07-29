@@ -11,7 +11,7 @@ import PortalChat from '../components/portal/PortalChat'
 import { claimInviteCode } from '../lib/invite'
 
 const TABS: [string, string][] = [
-  ['home', 'Inicio'], ['training', 'Entrenos'], ['checkin', 'Bienestar'], ['nutrition', 'Comida'], ['chat', 'Coach'],
+  ['home', 'Inicio'], ['training', 'Mi trabajo'], ['checkin', 'Bienestar'], ['nutrition', 'Comida'], ['chat', 'Coach'],
 ]
 
 export default function PlayerPortal() {
