@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { PlayerData } from '../../hooks/usePlayerData'
 import { TrainingSession, Task } from '../../types/database'
-import { TYPE_ICON, isOverdue, formatDue } from '../../lib/tasks'
+import { TYPE_ICON, isOverdue, formatDue, playableVideo } from '../../lib/tasks'
 
 export default function PortalTraining({ pd }: { pd: PlayerData }) {
   const { training, sessionEx, tasks, reload } = pd
@@ -73,8 +73,8 @@ export default function PortalTraining({ pd }: { pd: PlayerData }) {
                 </div>
               </div>
 
-              {t.video_url && !t.done && (
-                <a href={t.video_url} target="_blank" rel="noreferrer"
+              {playableVideo(t.video_url) && !t.done && (
+                <a href={playableVideo(t.video_url)!} target="_blank" rel="noreferrer"
                    className="mt-4 w-full bg-ink text-paper rounded-xl py-3 text-[14px] font-medium flex items-center justify-center gap-2 active:scale-[.98] transition">
                   <span className="text-volt">▶</span> Ver el vídeo
                 </a>
@@ -97,21 +97,38 @@ export default function PortalTraining({ pd }: { pd: PlayerData }) {
                   {s.goal && /[[]En club[]]/i.test(s.goal) && <span className="chip bg-ink text-paper">⚽ En club</span>}
                 </div>
                 <div className="text-[12px] text-muted tnum">{s.date}{s.goal ? ` · ${s.goal.replace(/^\s*[[](En casa|En club)[]]\s*/i, '')}` : ''}</div>
+                {exs.some(e => playableVideo(e.video_url)) && (
+                  <div className="text-[12px] text-ink mt-1 flex items-center gap-1.5">
+                    <span className="text-[10px]">▶</span>
+                    {exs.filter(e => playableVideo(e.video_url)).length === 1
+                      ? '1 ejercicio con vídeo'
+                      : `${exs.filter(e => playableVideo(e.video_url)).length} ejercicios con vídeo`}
+                  </div>
+                )}
               </div>
               {s.completed ? <span className="chip bg-volt text-ink">✓ Hecho</span>
                 : <button onClick={() => complete(s)} className="btn-ink text-[12px] px-4 py-2">Marcar hecho</button>}
             </div>
             {exs.length > 0 && (
-              <div className="mt-3 pt-3 border-t border-line space-y-1.5">
-                {exs.map((e, i) => (
-                  <div key={e.id} className="flex items-start gap-2.5 text-[14px]">
-                    <span className="tnum text-muted text-[12px] w-4 mt-0.5">{i + 1}</span>
-                    <div><span className="font-medium text-ink">{e.title}</span>
-                      {e.video_url && <a href={e.video_url} target="_blank" className="text-ink ml-1.5 underline text-[12px]">vídeo</a>}
-                      <div className="text-[12px] text-muted tnum">{[e.series && e.series + ' series', e.reps && e.reps + ' reps', e.weight].filter(Boolean).join(' · ')}</div>
+              <div className="mt-3 pt-3 border-t border-line space-y-3">
+                {exs.map((e, i) => {
+                  const video = playableVideo(e.video_url)
+                  return (
+                    <div key={e.id} className="flex items-start gap-2.5 text-[14px]">
+                      <span className="tnum text-muted text-[12px] w-4 mt-1">{i + 1}</span>
+                      <div className="flex-1 min-w-0">
+                        <span className="font-medium text-ink">{e.title}</span>
+                        <div className="text-[12px] text-muted tnum">{[e.series && e.series + ' series', e.reps && e.reps + ' reps', e.weight].filter(Boolean).join(' · ')}</div>
+                        {video && (
+                          <a href={video} target="_blank" rel="noreferrer"
+                             className="mt-2 inline-flex items-center gap-2 bg-ink text-paper rounded-full pl-3 pr-4 h-9 text-[13px] font-medium active:scale-[.97] transition">
+                            <span className="text-volt text-[11px]">▶</span> Ver cómo se hace
+                          </a>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             )}
             {s.player_feedback
