@@ -14,6 +14,7 @@ import { posLabel } from './positions'
 import { isGoalkeeper } from './players'
 import { getAttributes, SOURCE_LABEL } from './attributes'
 import { rangeAdherence } from './mealPlan'
+import { matchSeason, seasonsIn, seasonTitle } from './seasons'
 
 const avg = (xs: number[]) => xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null
 const r1 = (n: number | null) => n === null ? null : Math.round(n * 10) / 10
@@ -78,6 +79,19 @@ export async function buildPlayerDossier(player: Player): Promise<string> {
 
   // ── Competición ──
   if (matches.length) {
+    const temporadas = seasonsIn(matches)
+    if (temporadas.length > 1) {
+      L.push(`\nHISTÓRICO POR TEMPORADAS:`)
+      for (const t of temporadas) {
+        const ms = matches.filter(m => matchSeason(m) === t)
+        const mn = ms.reduce((a, m) => a + (m.mins ?? 0), 0)
+        const ti = ms.filter(m => m.role === 'titular').length
+        L.push(`- ${seasonTitle(t)}: ${ms.length} partidos · ${ti} titular · ${mn} min`
+          + (gk ? ` · ${ms.reduce((a, m) => a + (m.conceded ?? 0), 0)} encajados`
+                : ` · ${ms.reduce((a, m) => a + (m.goals ?? 0), 0)} goles`))
+      }
+      L.push(`Los datos que siguen son de TODAS las temporadas juntas. Al comparar, ten en cuenta que ha ido creciendo.`)
+    }
     const played = matches.filter(m => (m.mins ?? 0) > 0)
     const starts = matches.filter(m => m.role === 'titular').length
     const subs = matches.filter(m => m.role === 'suplente').length

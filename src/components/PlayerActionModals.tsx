@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { askAI, playerContextString, structureSeason, SeasonImport } from '../lib/aiCoach'
 import { buildPlayerDossier } from '../lib/playerDossier'
 import { attributePairs } from '../lib/attributes'
+import { seasonOf, currentSeason } from '../lib/seasons'
 import { generateReport, ReportType, Frequency } from '../lib/reportGenerator'
 import { parsePlan, ParsedPlan } from './ExportPlanModal'
 import Modal from './Modal'
@@ -92,17 +93,21 @@ export function ImportSeasonModal({ player, onClose, onSaved }: { player: Player
     if (!data) return
     setBusy('save'); setError('')
     try {
-      if (replace && existing > 0) {
-        const { error: delErr } = await supabase.from('matches').delete().eq('player_id', player.id)
-        if (delErr) throw delErr
-      }
       const rows = data.matches.map(m => ({
         coach_id: player.coach_id, player_id: player.id,
+        season: seasonOf(m.date) ?? currentSeason(),
         date: m.date, rival: m.rival, result: m.result, mins: m.mins,
         called: m.role ? 'yes' : null, role: m.role,
         goals: m.goals, assists: m.assists, conceded: m.conceded,
         clean_sheet: m.clean_sheet, notes: m.notes,
       }))
+      if (replace && existing > 0) {
+        // Solo la temporada importada; lo de años anteriores se queda.
+        const temporadas = Array.from(new Set(rows.map(r => r.season)))
+        const { error: delErr } = await supabase.from('matches')
+          .delete().eq('player_id', player.id).in('season', temporadas)
+        if (delErr) throw delErr
+      }
       const { error: insErr } = await supabase.from('matches').insert(rows)
       if (insErr) throw insErr
       setSaved(rows.length)
@@ -220,7 +225,7 @@ export function ImportSeasonModal({ player, onClose, onSaved }: { player: Player
               </button>
               <button onClick={() => setReplace(true)}
                       className={`flex-1 py-2 rounded-xl text-[13px] font-medium ${replace ? 'bg-ink text-paper' : 'bg-canvas text-sub'}`}>
-                Reemplazar todos
+                Reemplazar esta temporada
               </button>
             </div>
           </div>

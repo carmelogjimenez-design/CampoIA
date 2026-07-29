@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { Player } from '../types/database'
 import { isGoalkeeper } from '../lib/players'
 import { parseFixtures, detectTeam, teamOptions, viewFor, Fixture } from '../lib/seasonCalendar'
+import { seasonOf, seasonsIn, currentSeason } from '../lib/seasons'
 import Modal from './Modal'
 
 type Estado = 'no' | 'titular' | 'suplente' | 'banquillo'
@@ -102,14 +103,19 @@ export default function ImportCalendarModal({ player, onClose, onSaved }: {
     try {
       const toSave = views.map((v, i) => ({ v, r: rows[i] })).filter(x => x.r.estado !== 'no')
       if (!toSave.length) { setError('No has marcado ningún partido.'); setBusy(false); return }
+      const rowsToInsertSeasons = toSave.map(x => seasonOf(x.v.fixture.date) ?? currentSeason())
 
       if (replace && existing > 0) {
-        const { error: delErr } = await supabase.from('matches').delete().eq('player_id', player.id)
+        // Solo se borra la temporada que estás importando: el histórico anterior no se toca.
+        const temporadas = Array.from(new Set(rowsToInsertSeasons))
+        const { error: delErr } = await supabase.from('matches')
+          .delete().eq('player_id', player.id).in('season', temporadas)
         if (delErr) throw delErr
       }
 
       const rowsToInsert = toSave.map(({ v, r }) => ({
         coach_id: player.coach_id, player_id: player.id,
+        season: seasonOf(v.fixture.date) ?? currentSeason(),
         date: v.fixture.date, rival: v.rival, result: v.result,
         mins: r.mins === '' ? null : Number(r.mins),
         called: 'yes',
@@ -168,6 +174,10 @@ export default function ImportCalendarModal({ player, onClose, onSaved }: {
       {error && <div className="card-line px-4 py-3 mb-4 text-[13px] text-ink">⚠ {error}</div>}
 
       <div className="flex items-center gap-3 mb-4 flex-wrap">
+        <span className="eyebrow">Temporada</span>
+        <span className="chip bg-ink text-paper tnum">
+          {seasonsIn(fixtures.map(f => ({ date: f.date }))).join(' · ') || currentSeason()}
+        </span>
         <span className="eyebrow">Su equipo</span>
         <select className="bg-canvas rounded-lg px-3 py-1.5 text-[13px] outline-none border border-line"
                 value={team} onChange={e => setTeam(e.target.value)}>
@@ -260,7 +270,8 @@ export default function ImportCalendarModal({ player, onClose, onSaved }: {
           {existing > 0 && (
             <div className="card-line p-4 mb-4">
               <p className="text-[13px] text-ink mb-3">
-                Ya tiene <span className="font-semibold tnum">{existing}</span> partidos guardados.
+                Ya tiene <span className="font-semibold tnum">{existing}</span> partidos guardados en total.
+                Reemplazar solo afecta a la temporada que estás importando.
               </p>
               <div className="flex gap-2">
                 <button onClick={() => setReplace(false)}
@@ -269,7 +280,7 @@ export default function ImportCalendarModal({ player, onClose, onSaved }: {
                 </button>
                 <button onClick={() => setReplace(true)}
                         className={`flex-1 py-2 rounded-xl text-[13px] font-medium ${replace ? 'bg-ink text-paper' : 'bg-canvas text-sub'}`}>
-                  Reemplazar todos
+                  Reemplazar esta temporada
                 </button>
               </div>
             </div>

@@ -50,6 +50,7 @@ export interface Match {
   id: string
   coach_id: string | null
   player_id: string
+  season: string | null
   date: string | null
   rival: string | null
   result: string | null

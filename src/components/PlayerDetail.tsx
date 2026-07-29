@@ -14,6 +14,7 @@ import { PlayerAIModal, ImportSeasonModal, QuickReportModal } from './PlayerActi
 import ExportPlanModal, { ParsedPlan } from './ExportPlanModal'
 import PlayerAccessModal from './PlayerAccessModal'
 import AttributesCard from './AttributesCard'
+import { matchSeason, seasonsIn, currentSeason, seasonTitle } from '../lib/seasons'
 
 interface Props { player: Player; onBack: () => void; players?: Player[]; onDeleted?: () => void }
 
@@ -26,6 +27,7 @@ export default function PlayerDetail({ player: initial, onBack, players = [], on
   const [tasks, setTasks] = useState<Task[]>([])
   const [modal, setModal] = useState<null | 'edit' | 'session' | 'task' | 'match' | 'ai' | 'import' | 'report' | 'test' | 'access'>(null)
   const [exportPlan, setExportPlan] = useState<ParsedPlan | null>(null)
+  const [season, setSeason] = useState<string | null>(null)
   const gk = isGoalkeeper(player)
   const single = players.length ? players : [player]
 
@@ -44,12 +46,17 @@ export default function PlayerDetail({ player: initial, onBack, players = [], on
 
   useEffect(() => { load() }, [load])
 
-  const totMins = matches.reduce((s, m) => s + (m.mins ?? 0), 0)
-  const totGoals = matches.reduce((s, m) => s + (m.goals ?? 0), 0)
-  const totAssists = matches.reduce((s, m) => s + (m.assists ?? 0), 0)
-  const cleanSheets = matches.filter(m => m.clean_sheet === true).length
-  const totConceded = matches.reduce((s, m) => s + (m.conceded ?? 0), 0)
-  const called = matches.filter(m => m.called === 'yes' || ['titular', 'suplente', 'no-play'].includes(m.role ?? '')).length
+  // ── Temporadas ──
+  const seasons = seasonsIn(matches)
+  const activeSeason = season ?? seasons[0] ?? currentSeason()
+  const seasonMatches = season === 'all' ? matches : matches.filter(m => matchSeason(m) === activeSeason)
+
+  const totMins = seasonMatches.reduce((s, m) => s + (m.mins ?? 0), 0)
+  const totGoals = seasonMatches.reduce((s, m) => s + (m.goals ?? 0), 0)
+  const totAssists = seasonMatches.reduce((s, m) => s + (m.assists ?? 0), 0)
+  const cleanSheets = seasonMatches.filter(m => m.clean_sheet === true).length
+  const totConceded = seasonMatches.reduce((s, m) => s + (m.conceded ?? 0), 0)
+  const called = seasonMatches.filter(m => m.called === 'yes' || ['titular', 'suplente', 'no-play'].includes(m.role ?? '')).length
   const stats: [string, number][] = [
     ['Convocatorias', called], ['Minutos', totMins], ['Goles', totGoals], ['Asistencias', totAssists],
     ...(gk ? [['Encajados', totConceded], ['Porterías 0', cleanSheets]] as [string, number][] : []),
@@ -121,7 +128,28 @@ export default function PlayerDetail({ player: initial, onBack, players = [], on
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
         {/* Competición */}
         <div className="lg:col-span-2 card p-7">
-          <div className="eyebrow mb-6">Competición</div>
+          <div className="flex items-baseline justify-between gap-3 mb-5 flex-wrap">
+            <div className="eyebrow">Competición</div>
+            {seasons.length > 0 && (
+              <span className="text-[11px] text-muted tnum">
+                {season === 'all' ? `${matches.length} partidos` : seasonTitle(activeSeason)}
+              </span>
+            )}
+          </div>
+
+          {seasons.length > 1 && (
+            <div className="flex gap-1.5 mb-6 flex-wrap">
+              {seasons.map(sn => (
+                <button key={sn} onClick={() => setSeason(sn)}
+                        className={activeSeason === sn && season !== 'all' ? 'chip bg-ink text-paper' : 'chip'}>
+                  {sn}
+                </button>
+              ))}
+              <button onClick={() => setSeason('all')}
+                      className={season === 'all' ? 'chip bg-ink text-paper' : 'chip'}>Todas</button>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-y-7">
             {stats.map(([label, val], i) => (
               <div key={label}>
@@ -156,9 +184,9 @@ export default function PlayerDetail({ player: initial, onBack, players = [], on
         <div className="card p-7">
           <div className="flex items-center justify-between mb-5">
             <div className="eyebrow">Últimos partidos</div>
-            <span className="chip tnum">{matches.length}</span>
+            <span className="chip tnum">{seasonMatches.length}</span>
           </div>
-          {matches.slice(0, 5).map(m => (
+          {seasonMatches.slice(0, 5).map(m => (
             <div key={m.id} className="flex items-center justify-between py-2.5 border-b border-line last:border-0">
               <div><span className="text-[14px] text-ink">vs {m.rival}</span><span className="text-[12px] text-muted ml-2 tnum">{m.date?.slice(5)}</span></div>
               <div className="flex items-center gap-2">
@@ -168,7 +196,7 @@ export default function PlayerDetail({ player: initial, onBack, players = [], on
               </div>
             </div>
           ))}
-          {!matches.length && <p className="text-muted text-[13px]">Sin partidos aún.</p>}
+          {!seasonMatches.length && <p className="text-muted text-[13px]">Sin partidos en esta temporada.</p>}
         </div>
       </div>
 
