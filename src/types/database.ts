@@ -12,6 +12,7 @@ export interface Player {
   coach_id: string | null
   auth_user_id: string | null
   invite_code: string | null
+  rffm_id: string | null
   name: string
   pos: string | null
   pos_group: PosGroup | null

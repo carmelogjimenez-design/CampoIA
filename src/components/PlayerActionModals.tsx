@@ -2,10 +2,12 @@ import { useState } from 'react'
 import { Player } from '../types/database'
 import { supabase } from '../lib/supabase'
 import { askAI, playerContextString, structureSeason, SeasonImport } from '../lib/aiCoach'
+import { buildPlayerDossier } from '../lib/playerDossier'
 import { attributePairs } from '../lib/attributes'
 import { generateReport, ReportType, Frequency } from '../lib/reportGenerator'
 import { parsePlan, ParsedPlan } from './ExportPlanModal'
 import Modal from './Modal'
+import ImportCalendarModal from './ImportCalendarModal'
 
 // ── Análisis IA rápido desde la ficha ──
 export function PlayerAIModal({ player, onClose, onExport }: { player: Player; onClose: () => void; onExport: (p: ParsedPlan) => void }) {
@@ -15,12 +17,22 @@ export function PlayerAIModal({ player, onClose, onExport }: { player: Player; o
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
-  const quick = ['Analiza su perfil y dame 3 focos de mejora', 'Plan de trabajo para esta semana', 'Puntos fuertes y débiles']
+  const quick = [
+    'Analiza su temporada con los datos que tienes y dame 3 focos de mejora',
+    'Cruza su carga de entrenamiento con su bienestar: ¿hay riesgo de lesión?',
+    '¿Qué relación ves entre su adherencia y su rendimiento en partido?',
+    'Plan de trabajo para esta semana',
+  ]
 
   async function run(question: string) {
     setBusy(true); setError(''); setAnswer(''); setPlan(null)
     try {
-      const text = await askAI({ question, playerContext: playerContextString(player) })
+      // El dossier lleva partidos, entrenos, bienestar, comida y tests.
+      // Si algo falla al reunirlo, seguimos con la ficha básica.
+      let ctx: string
+      try { ctx = await buildPlayerDossier(player) }
+      catch { ctx = playerContextString(player) }
+      const text = await askAI({ question, playerContext: ctx })
       const { visible, plan } = parsePlan(text)
       setAnswer(visible); setPlan(plan)
     } catch (e) { setError(e instanceof Error ? e.message : 'Error') } finally { setBusy(false) }
@@ -51,6 +63,7 @@ export function PlayerAIModal({ player, onClose, onExport }: { player: Player; o
 
 // ── Importar temporada: la IA estructura el histórico y SE GUARDA ──
 export function ImportSeasonModal({ player, onClose, onSaved }: { player: Player; onClose: () => void; onSaved?: () => void }) {
+  const [via, setVia] = useState<null | 'calendario' | 'ia'>(null)
   const [text, setText] = useState('')
   const [data, setData] = useState<SeasonImport | null>(null)
   const [existing, setExisting] = useState(0)
@@ -139,21 +152,35 @@ export function ImportSeasonModal({ player, onClose, onSaved }: { player: Player
           </p>
         )}
 
-        {/* La IA dice un número de partidos y ha extraído otro: se cortó por el camino */}
+        {/* El número de partidos extraídos no cuadra con lo que dice el texto.
+            Puede ser truncado (faltan) o calendario del equipo en vez del jugador (sobran). */}
         {(() => {
-          const esperados = data.season.played ?? data.season.callups ?? 0
-          if (esperados <= data.matches.length) return null
+          const dice = data.season.played ?? data.season.callups ?? 0
+          if (!dice || dice === data.matches.length) return null
+          const faltan = dice > data.matches.length
           return (
             <div className="card-line p-4 mb-4">
               <p className="text-[13px] text-ink leading-relaxed">
-                ⚠ La IA menciona <span className="font-semibold tnum">{esperados}</span> partidos
-                pero solo he podido extraer <span className="font-semibold tnum">{data.matches.length}</span>.
-                Probablemente se cortó a mitad. Guarda estos y vuelve a importar el resto,
-                o pega la temporada en dos tandas.
+                ⚠ El texto habla de <span className="font-semibold tnum">{dice}</span> partidos
+                y he extraído <span className="font-semibold tnum">{data.matches.length}</span>.
+                {faltan
+                  ? ' Probablemente la IA se cortó a mitad. Guarda estos y pega el resto en otra tanda.'
+                  : ' Puede que hayas pegado el calendario del equipo entero en vez de los partidos de este jugador. Si es así, en su ficha aparecerán partidos que no jugó.'}
               </p>
             </div>
           )
         })()}
+
+        {/* Sin minutos en ningún partido: la fuente no traía datos del jugador */}
+        {data.matches.length > 2 && data.matches.every(m => m.mins === null) && (
+          <div className="card-line p-4 mb-4">
+            <p className="text-[13px] text-ink leading-relaxed">
+              ⚠ Ningún partido trae minutos. Eso suele significar que el texto era el
+              calendario del equipo, no las actuaciones del jugador. Si guardas esto,
+              su ficha sumará convocatorias pero seguirá con 0 minutos.
+            </p>
+          </div>
+        )}
 
         <div className="border border-line rounded-xl overflow-hidden mb-5">
           <div className="max-h-[34vh] overflow-y-auto">
@@ -213,6 +240,38 @@ export function ImportSeasonModal({ player, onClose, onSaved }: { player: Player
     )
   }
 
+  // ── Elegir cómo importar ──
+  if (via === 'calendario') return <ImportCalendarModal player={player} onClose={onClose} onSaved={onSaved} />
+
+  if (via === null) return (
+    <Modal title="Importar temporada" onClose={onClose} wide>
+      <p className="text-sub text-[14px] leading-relaxed mb-5">¿Qué tienes a mano?</p>
+
+      <button onClick={() => setVia('calendario')}
+              className="w-full text-left card-line p-5 mb-3 hover:bg-canvas/60 transition">
+        <div className="flex items-start gap-3">
+          <span className="chip bg-volt text-ink shrink-0 mt-0.5">Recomendado</span>
+          <div>
+            <div className="text-[15px] font-medium text-ink mb-1">El calendario del equipo</div>
+            <p className="text-[13px] text-sub leading-relaxed">
+              La tabla de jornadas de la federación. La leo sin IA y tú marcas en cuáles jugó
+              y sus minutos. Exacto y rápido: no se corta ni se inventa nada.
+            </p>
+          </div>
+        </div>
+      </button>
+
+      <button onClick={() => setVia('ia')}
+              className="w-full text-left card-line p-5 hover:bg-canvas/60 transition">
+        <div className="text-[15px] font-medium text-ink mb-1">El detalle de sus partidos</div>
+        <p className="text-[13px] text-sub leading-relaxed">
+          Un texto que ya diga partido a partido si fue titular y cuántos minutos hizo.
+          Lo estructura la IA. Si tu texto no trae esos datos, usa la opción de arriba.
+        </p>
+      </button>
+    </Modal>
+  )
+
   // ── Pegar el histórico ──
   return (
     <Modal title="Importar temporada" onClose={onClose} wide>
@@ -228,7 +287,7 @@ export function ImportSeasonModal({ player, onClose, onSaved }: { player: Player
       </p>
       {error && <div className="card-line px-4 py-3 mb-4 text-[13px] text-ink">⚠ {error}</div>}
       <div className="flex justify-end gap-2">
-        <button onClick={onClose} className="btn-line">Cerrar</button>
+        <button onClick={() => setVia(null)} className="btn-line">Volver</button>
         <button onClick={structure} disabled={busy === 'ai' || !text.trim()} className="btn-ink">
           {busy === 'ai' ? 'Leyendo la temporada…' : 'Estructurar con IA'}
         </button>

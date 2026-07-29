@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { Player } from '../types/database'
 import { useAuth } from '../context/AuthContext'
 import { posLabel } from '../lib/positions'
+import { buildPlayerDossier } from '../lib/playerDossier'
 import ExportPlanModal, { parsePlan, ParsedPlan } from './ExportPlanModal'
 import { generateDietPDF } from '../lib/dietPdf'
 import { parseDietPlan, saveMealPlan } from '../lib/mealPlan'
@@ -26,11 +27,24 @@ export default function AICoachView({ players }: Props) {
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [chat, busy])
 
-  function baseContext(p?: Player): string {
+  function fichaBasica(p?: Player): string {
     if (!p) return 'Sin jugador seleccionado.'
     return `Jugador: ${p.name}. Demarcación: ${posLabel(p.pos, p.pos_group)}. `
       + `${p.age ? `Edad: ${p.age}. ` : ''}${p.club ? `Club: ${p.club}. ` : ''}`
       + `${p.foot ? `Pie: ${p.foot}. ` : ''}${p.height_cm ? `Altura: ${p.height_cm}cm. ` : ''}${p.weight_kg ? `Peso: ${p.weight_kg}kg. ` : ''}`
+  }
+
+  // Dossier completo: partidos, entrenos, tareas, bienestar, comida y tests.
+  // Se cachea por jugador para no reconsultar en cada mensaje del chat.
+  const dossierCache = useRef<Record<string, string>>({})
+  async function baseContext(p?: Player): Promise<string> {
+    if (!p) return 'Sin jugador seleccionado.'
+    if (dossierCache.current[p.id]) return dossierCache.current[p.id]
+    try {
+      const d = await buildPlayerDossier(p)
+      dossierCache.current[p.id] = d
+      return d
+    } catch { return fichaBasica(p) }
   }
 
   async function callAI(q: string, ctx: string, conv: Msg[]): Promise<string> {
@@ -58,7 +72,7 @@ export default function AICoachView({ players }: Props) {
     setChat(c => [...c, { role: 'user', text: q }])
     setQuestion(''); setBusy(true); setError('')
     try {
-      const text = await callAI(q, baseContext(player), prev)
+      const text = await callAI(q, await baseContext(player), prev)
       const { visible, plan } = parsePlan(text)
       setChat(c => [...c, { role: 'assistant', text: visible, plan }])
     } catch (e) { setError(e instanceof Error ? e.message : 'Error al conectar con la IA') } finally { setBusy(false) }
@@ -75,7 +89,7 @@ export default function AICoachView({ players }: Props) {
       const byType: Record<string, number> = {}
       sessions?.forEach(s => { byType[s.type ?? 'General'] = (byType[s.type ?? 'General'] ?? 0) + 1 })
       const load = total ? `Carga de entrenamiento: ${total} sesiones registradas (${Object.entries(byType).map(([t, n]) => `${n} ${t}`).join(', ')}).` : 'Carga de entrenamiento: aún sin sesiones registradas, asume carga moderada de un futbolista joven.'
-      const ctx = baseContext(player) + load
+      const ctx = (await baseContext(player)) + load
 
       const q = `Crea un PLAN NUTRICIONAL MENSUAL COMPLETO para este jugador, teniendo en cuenta su edad, altura, peso y carga de entrenamientos. Desarrolla el CALENDARIO SEMANAL con los 7 días (Lunes a Domingo) uno por uno, cada día con TODAS sus comidas (desayuno, media mañana, comida, merienda, pre-entreno, post-entreno y cena) y platos variados sin repetir entre días. Añade el diagnóstico, las pautas de hidratación, y la rotación para las 4 semanas del mes. Sé extenso y completo, no te quedes corto. Recuerda que es un deportista joven en crecimiento: enfoque saludable, para crecer y rendir, nunca restrictivo.`
       const text = await callAI(q, ctx, [])
