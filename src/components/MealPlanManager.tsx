@@ -34,15 +34,30 @@ export default function MealPlanManager({ players, coachId, onImport }: Props) {
         {plans.map(ps => {
           const player = players.find(p => p.id === ps.playerId)!
           const pct = ps.total ? Math.round(ps.done / ps.total * 100) : 0
+          const R = 26, C = 2 * Math.PI * R
           return (
             <div key={ps.plan.id} className="card p-5">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-9 h-9 rounded-full bg-canvas flex items-center justify-center text-[11px] font-semibold text-sub overflow-hidden shrink-0">{player.photo_url ? <img src={player.photo_url} className="w-full h-full object-cover" /> : initials(player.name)}</div>
-                <div className="flex-1 min-w-0"><div className="text-[14px] font-medium text-ink truncate">{player.name}</div><div className="text-[11px] text-muted">{ps.items.length} comidas · {ps.plan.title}</div></div>
-                <button onClick={() => setEditing(ps)} className="btn-line text-[12px] px-3 py-1.5">Ver / editar</button>
+              <div className="flex items-center gap-4">
+                {/* Progreso circular del día */}
+                <div className="relative shrink-0">
+                  <svg width="72" height="72" viewBox="0 0 72 72" className="-rotate-90">
+                    <circle cx="36" cy="36" r={R} fill="none" stroke="#E8E8ED" strokeWidth="6" />
+                    <circle cx="36" cy="36" r={R} fill="none" stroke={pct >= 70 ? '#C9F31D' : '#1D1D1F'} strokeWidth="6" strokeLinecap="round"
+                            strokeDasharray={C} strokeDashoffset={C * (1 - pct / 100)} style={{ transition: 'stroke-dashoffset .8s ease' }} />
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="stat-num text-[15px] leading-none">{ps.done}<span className="text-muted text-[11px]">/{ps.total}</span></span>
+                  </div>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <div className="w-6 h-6 rounded-full bg-canvas flex items-center justify-center text-[9px] font-semibold text-sub overflow-hidden shrink-0">{player.photo_url ? <img src={player.photo_url} className="w-full h-full object-cover" /> : initials(player.name)}</div>
+                    <span className="text-[14px] font-medium text-ink truncate">{player.name}</span>
+                  </div>
+                  <div className="text-[11px] text-muted mb-2">{ps.items.length} comidas · comidas de hoy</div>
+                  <button onClick={() => setEditing(ps)} className="btn-line text-[12px] px-3 py-1.5">Ver / editar</button>
+                </div>
               </div>
-              <div className="flex items-center justify-between mb-1.5"><span className="text-[12px] text-sub">Hoy: {ps.done}/{ps.total} comidas</span><span className="stat-num text-[13px]">{pct}%</span></div>
-              <div className="bar-track"><div className={pct >= 70 ? 'bar-fill-volt' : 'bar-fill'} style={{ width: `${pct}%` }} /></div>
             </div>
           )
         })}

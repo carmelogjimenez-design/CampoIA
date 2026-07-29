@@ -46,7 +46,11 @@ export default function NutritionView({ players, coachId }: Props) {
 
   const filtered = filter === 'all' ? logs : logs.filter(l => l.player_id === filter)
   const good = filtered.filter(l => l.quality === 'good').length
+  const regular = filtered.filter(l => l.quality === 'regular').length
+  const bad = filtered.filter(l => l.quality === 'bad').length
   const score = filtered.length ? Math.round(good / filtered.length * 100) : 0
+  const pct = (n: number) => filtered.length ? Math.round(n / filtered.length * 100) : 0
+  const activePlayers = new Set(filtered.map(l => l.player_id)).size
   const byPlayer = players.map(p => {
     const pl = logs.filter(l => l.player_id === p.id)
     const g = pl.filter(l => l.quality === 'good').length
@@ -61,17 +65,55 @@ export default function NutritionView({ players, coachId }: Props) {
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        <div className="lg:col-span-1 bg-ink rounded-2xl p-7 text-paper flex flex-col justify-between">
-          <div className="text-[13px] text-paper/60 uppercase tracking-eyebrow font-semibold">Calidad global</div>
-          <div><div className="stat-num text-volt text-[54px] leading-none">{score}<span className="text-[28px]">%</span></div><div className="text-[13px] text-paper/50 mt-1">comidas saludables · {filtered.length} registros</div></div>
+        {/* Hero calidad con anillo + desglose semáforo */}
+        <div className="bg-ink rounded-3xl p-7 text-paper relative overflow-hidden">
+          <div className="absolute -right-12 -top-12 w-44 h-44 rounded-full bg-volt/10 blur-3xl" />
+          <div className="relative">
+            <div className="eyebrow text-paper/50 mb-5">Calidad global</div>
+            <div className="flex items-center gap-6">
+              <div className="relative shrink-0">
+                <svg width="104" height="104" viewBox="0 0 104 104" className="-rotate-90">
+                  <circle cx="52" cy="52" r="44" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="9" />
+                  <circle cx="52" cy="52" r="44" fill="none" stroke="#C9F31D" strokeWidth="9" strokeLinecap="round"
+                          strokeDasharray={2 * Math.PI * 44} strokeDashoffset={2 * Math.PI * 44 * (1 - score / 100)}
+                          style={{ transition: 'stroke-dashoffset 1s cubic-bezier(.2,.8,.2,1)' }} />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="stat-num text-paper text-[26px] leading-none">{score}%</span>
+                </div>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-[13px] text-paper/50 mb-3">{filtered.length} registros</div>
+                <div className="space-y-2">
+                  <Semaphore color="#C9F31D" label="Saludable" n={good} pct={pct(good)} />
+                  <Semaphore color="#E8C447" label="Regular" n={regular} pct={pct(regular)} />
+                  <Semaphore color="#D96B6B" label="Mejorable" n={bad} pct={pct(bad)} />
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
+
+        {/* Adherencia por jugador */}
         <div className="lg:col-span-2 card p-7">
-          <div className="eyebrow mb-5">Adherencia por jugador</div>
-          {byPlayer.length === 0 && <p className="text-muted text-[14px]">Sin registros aún.</p>}
+          <div className="flex items-center justify-between mb-5">
+            <div className="eyebrow">Adherencia por jugador</div>
+            <div className="flex items-center gap-4 text-[12px] text-muted">
+              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-canvas border border-line" />{players.length} jugadores</span>
+              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-volt" />{activePlayers} activos</span>
+            </div>
+          </div>
+          {byPlayer.length === 0 && <p className="text-muted text-[14px]">Sin registros aún. Los jugadores apuntan su comida desde el portal.</p>}
           <div className="space-y-4">
             {byPlayer.map(x => (
               <div key={x.p.id}>
-                <div className="flex items-baseline justify-between mb-2"><span className="text-[14px] text-ink">{x.p.name}</span><span className="stat-num text-[14px]">{x.score}%</span></div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[14px] text-ink flex items-center gap-2.5">
+                    <span className="w-6 h-6 rounded-full bg-canvas flex items-center justify-center text-[9px] font-semibold text-sub overflow-hidden">{x.p.photo_url ? <img src={x.p.photo_url} className="w-full h-full object-cover" /> : initials(x.p.name)}</span>
+                    {x.p.name}
+                  </span>
+                  <span className="stat-num text-[14px]">{x.score}%</span>
+                </div>
                 <div className="bar-track"><div className={x.score >= 70 ? 'bar-fill-volt' : 'bar-fill'} style={{ width: `${x.score}%` }} /></div>
               </div>
             ))}
@@ -100,6 +142,17 @@ export default function NutritionView({ players, coachId }: Props) {
           <div className="flex justify-end gap-2"><button onClick={() => { setImportOpen(false); setImportMsg('') }} className="btn-line">Cerrar</button><button onClick={importPlan} disabled={importBusy} className="btn-volt">{importBusy ? 'Generando…' : 'Generar y asignar'}</button></div>
         </Modal>
       )}
+    </div>
+  )
+}
+
+function Semaphore({ color, label, n, pct }: { color: string; label: string; n: number; pct: number }) {
+  return (
+    <div className="flex items-center gap-2.5">
+      <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+      <span className="text-[12px] text-paper/70 w-16">{label}</span>
+      <div className="flex-1 h-1.5 rounded-full bg-paper/10 overflow-hidden"><div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: color }} /></div>
+      <span className="text-[12px] text-paper/50 tabular-nums w-6 text-right">{n}</span>
     </div>
   )
 }
