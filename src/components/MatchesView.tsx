@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { Player, Match } from '../types/database'
 import { getPlayerName, initials, isGoalkeeper } from '../lib/players'
-import { matchSeason, seasonsIn, seasonTitle } from '../lib/seasons'
+import { matchSeason, seasonsIn, seasonTitle, currentSeason } from '../lib/seasons'
 import AddMatchModal from './AddMatchModal'
 import { EmptyState } from './States'
 
@@ -66,15 +66,22 @@ export default function MatchesView({ players, matches, coachId, onReload }: Pro
       </div>
 
       {/* Temporada */}
-      {seasons.length > 1 && (
+      {seasons.length > 0 && (
         <div className="flex gap-2 flex-wrap mb-3 items-center">
           <span className="eyebrow mr-1">Temporada</span>
           {seasons.map(s => (
             <button key={s} onClick={() => setSeason(s)}
                     className={season === s ? 'chip bg-ink text-paper' : 'chip'}>{s}</button>
           ))}
-          <button onClick={() => setSeason('all')}
-                  className={season === 'all' ? 'chip bg-ink text-paper' : 'chip'}>Todas</button>
+          {seasons.length > 1 && (
+            <button onClick={() => setSeason('all')}
+                    className={season === 'all' ? 'chip bg-ink text-paper' : 'chip'}>Todas</button>
+          )}
+          {seasons.length === 1 && (
+            <span className="text-[11px] text-faint">
+              Cuando registres partidos de la {currentSeason()} aparecerá aquí su propio filtro.
+            </span>
+          )}
         </div>
       )}
 
@@ -91,13 +98,11 @@ export default function MatchesView({ players, matches, coachId, onReload }: Pro
       {/* Lista */}
       {grupos.map(([sn, ms]) => (
         <div key={sn} className="mb-7 last:mb-0">
-          {grupos.length > 1 && (
-            <div className="flex items-center gap-2.5 mb-3">
-              <span className="eyebrow">{seasonTitle(sn)}</span>
-              <span className="text-[11px] text-faint tnum">{ms.length}</span>
-              <div className="flex-1 h-px bg-line" />
-            </div>
-          )}
+          <div className="flex items-center gap-2.5 mb-3">
+            <span className="eyebrow">{seasonTitle(sn)}</span>
+            <span className="text-[11px] text-faint tnum">{ms.length}</span>
+            <div className="flex-1 h-px bg-line" />
+          </div>
 
           <div className="space-y-2.5">
             {ms.map(m => {
@@ -129,7 +134,8 @@ export default function MatchesView({ players, matches, coachId, onReload }: Pro
                     {(m.goals ?? 0) > 0 && <span className="chip bg-volt text-ink font-semibold">{m.goals} ⚽</span>}
                     {(m.assists ?? 0) > 0 && <span className="chip">{m.assists} 🅰</span>}
                     {gk && m.clean_sheet && <span className="chip bg-volt text-ink">🧤 Portería a 0</span>}
-                    {gk && !m.clean_sheet && (m.conceded ?? 0) > 0 && <span className="chip">{m.conceded} encajados</span>}
+                    {gk && !m.clean_sheet && (m.conceded ?? 0) > 0 &&
+                      <span className="chip">{m.conceded} {m.conceded === 1 ? 'encajado' : 'encajados'}</span>}
                   </div>
 
                   <div className="stat-num text-[22px] w-16 text-right shrink-0">{m.result || '—'}</div>
