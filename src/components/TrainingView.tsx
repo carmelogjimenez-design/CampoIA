@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Player, TrainingSession, SessionExercise } from '../types/database'
+import { isSearchUrl } from '../lib/tasks'
 import { getPlayerName } from '../lib/players'
 import AddSessionModal from './AddSessionModal'
 import { EmptyState } from './States'
@@ -74,7 +75,11 @@ export default function TrainingView({ players, training, sessionEx, coachId, on
                       <span className="tnum text-muted text-[12px] w-4 mt-0.5">{i + 1}</span>
                       <div className="flex-1">
                         <span className="font-medium text-ink">{e.title}</span>
-                        {e.video_url && <a href={e.video_url} target="_blank" className="text-ink ml-1.5 underline text-[12px]">vídeo</a>}
+                        {isSearchUrl(e.video_url)
+                          ? <a href={e.video_url!} target="_blank" rel="noreferrer" className="chip ml-2 hover:bg-line transition">Buscar vídeo</a>
+                          : e.video_url
+                            ? <a href={e.video_url} target="_blank" rel="noreferrer" className="chip bg-ink text-paper ml-2 hover:opacity-85 transition">▶ vídeo</a>
+                            : <span className="text-[11px] text-faint ml-2">sin vídeo</span>}
                         <div className="text-[12px] text-muted tnum">{[e.series && e.series + ' series', e.reps && e.reps + ' reps', e.weight].filter(Boolean).join(' · ')}</div>
                       </div>
                     </div>
