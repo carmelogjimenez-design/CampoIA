@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { versionLabel } from '../lib/version'
 import { supabase } from '../lib/supabase'
 import { setPendingInvite, clearPendingInvite } from '../lib/invite'
 
@@ -86,7 +87,7 @@ export default function Login() {
           </div>
         </div>
 
-        <div className="relative text-[11px] text-paper/30 hidden lg:block">©2026 CIMA CIRCUS. Todos los derechos reservados.</div>
+        <div className="relative text-[11px] text-paper/30 hidden lg:block">©2026 CIMA CIRCUS. Todos los derechos reservados. <span className="tnum">{versionLabel}</span></div>
       </div>
 
       {/* ── Panel formulario ── */}

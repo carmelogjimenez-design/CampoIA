@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { versionLabel } from '../lib/version'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { LoadingScreen, ErrorState, FirstRun } from '../components/States'
@@ -124,7 +125,7 @@ export default function CoachDashboard() {
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
             Cerrar sesión
           </button>
-          <div className="text-[10px] text-faint text-center mt-4 leading-relaxed">©2026 CIMA CIRCUS.<br/>Todos los derechos reservados.</div>
+          <div className="text-[10px] text-faint text-center mt-4 leading-relaxed">©2026 CIMA CIRCUS.<br/>Todos los derechos reservados.<br/><span className="tnum">{versionLabel}</span></div>
         </div>
       </aside>
 

@@ -130,6 +130,22 @@ export async function buildPlayerDossier(player: Player): Promise<string> {
     L.push(`${doneS.length} de ${sessions.length} sesiones completadas (adherencia ${adh}%)`
       + `${rpe != null ? ` · RPE medio ${rpe}/10` : ''}`)
     L.push(`Reparto: ${tipos}`)
+    // Ejercicio a ejercicio: revela qué se salta dentro de las sesiones
+    const { data: exData } = await supabase.from('session_exercises')
+      .select('title, done, session_id').eq('player_id', player.id)
+    const exs = (exData as { title: string; done: boolean }[] | null) ?? []
+    if (exs.length) {
+      const hechos = exs.filter(e => e.done).length
+      L.push(`Ejercicios: ${hechos} de ${exs.length} marcados como hechos.`)
+      const saltados = exs.filter(e => !e.done).map(e => e.title)
+      const repetidos = Object.entries(saltados.reduce<Record<string, number>>((acc, t) => {
+        acc[t] = (acc[t] ?? 0) + 1; return acc
+      }, {})).filter(([, n]) => n > 1).sort((a, b) => b[1] - a[1]).slice(0, 4)
+      if (repetidos.length) {
+        L.push(`Ejercicios que se salta una y otra vez: ${repetidos.map(([t, n]) => `${t} (${n} veces)`).join('; ')}`)
+      }
+    }
+
     const fb = sessions.filter(s => s.player_feedback).slice(0, 3)
     if (fb.length) {
       L.push(`Lo que dijo él tras entrenar:`)

@@ -1,4 +1,5 @@
 import { LoadingScreen, ErrorState } from '../components/States'
+import { versionLabel } from '../lib/version'
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
@@ -85,7 +86,7 @@ export default function PlayerPortal() {
         {tab === 'nutrition' && <PortalNutrition pd={pd} />}
         {tab === 'chat' && <PortalChat pd={pd} onRead={loadUnreadChat} />}
 
-        <div className="text-[10px] text-faint text-center mt-8">©2026 CIMA CIRCUS. Todos los derechos reservados.</div>
+        <div className="text-[10px] text-faint text-center mt-8">©2026 CIMA CIRCUS. Todos los derechos reservados. <span className="tnum">{versionLabel}</span></div>
       </div>
 
       {/* Tab bar inferior estilo iOS */}

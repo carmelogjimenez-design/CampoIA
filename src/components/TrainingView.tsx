@@ -68,13 +68,29 @@ export default function TrainingView({ players, training, sessionEx, coachId, on
                   <span className="text-[13px] text-sub">{s.goal.replace(/^\s*[[](En casa|En club)[]]\s*/i, '')}</span>
                 </div>
               )}
+              {exs.length > 0 && !s.completed && exs.some(e => e.done) && (
+                <div className="flex items-center gap-3 mt-2">
+                  <div className="bar-track flex-1">
+                    <div className={exs.every(e => e.done) ? 'bar-fill-volt' : 'bar-fill'}
+                         style={{ width: `${(exs.filter(e => e.done).length / exs.length) * 100}%` }} />
+                  </div>
+                  <span className="text-[11px] text-muted tnum shrink-0">{exs.filter(e => e.done).length}/{exs.length} hechos</span>
+                </div>
+              )}
+              {s.completed && exs.length > 0 && exs.some(e => !e.done) && exs.some(e => e.done) && (
+                <div className="text-[12px] text-ink mt-2">
+                  ⚠ Marcó la sesión como hecha pero dejó {exs.filter(e => !e.done).length} ejercicios sin marcar
+                </div>
+              )}
               {exs.length > 0 && (
                 <div className="border-t border-line pt-3 mt-2 space-y-1.5">
                   {exs.map((e, i) => (
                     <div key={e.id} className="flex items-start gap-2.5 text-[14px]">
-                      <span className="tnum text-muted text-[12px] w-4 mt-0.5">{i + 1}</span>
+                      <span className={`w-4 shrink-0 mt-0.5 text-center text-[12px] ${e.done ? 'text-ink' : 'tnum text-muted'}`}>
+                        {e.done ? '✓' : i + 1}
+                      </span>
                       <div className="flex-1">
-                        <span className="font-medium text-ink">{e.title}</span>
+                        <span className={`font-medium ${e.done ? 'text-muted' : 'text-ink'}`}>{e.title}</span>
                         {isSearchUrl(e.video_url)
                           ? <a href={e.video_url!} target="_blank" rel="noreferrer" className="chip ml-2 hover:bg-line transition">Buscar vídeo</a>
                           : e.video_url
