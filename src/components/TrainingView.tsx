@@ -12,29 +12,48 @@ interface Props {
 export default function TrainingView({ players, training, sessionEx, coachId, onReload }: Props) {
   const [showAdd, setShowAdd] = useState(false)
   const [edit, setEdit] = useState<TrainingSession | null>(null)
+  const [tab, setTab] = useState<'active' | 'done'>('active')
+
+  const active = training.filter(s => !s.completed)
+  const done = training.filter(s => s.completed)
+  const list = tab === 'active' ? active : done
 
   return (
     <div className="animate-[fadeIn_.4s_ease]">
-      <header className="flex flex-col sm:flex-row items-start sm:items-end sm:justify-between gap-4 mb-7">
+      <header className="flex flex-col sm:flex-row items-start sm:items-end sm:justify-between gap-4 mb-6">
         <div>
           <div className="eyebrow mb-2">Planificación</div>
           <h1 className="h-page text-[26px] sm:text-[40px] leading-none">Entrenamientos</h1>
-          <p className="text-muted text-[15px] mt-2.5 tnum">{training.length} sesiones</p>
+          <p className="text-muted text-[15px] mt-2.5 tnum">{active.length} activos · {done.length} realizados</p>
         </div>
         <button onClick={() => setShowAdd(true)} className="btn-ink">+ Nueva sesión</button>
       </header>
 
-      {training.length === 0 && <EmptyState icon="◷" title="Sin sesiones todavía" description="Planifica la primera sesión de entrenamiento para tus jugadores." actionLabel="+ Nueva sesión" onAction={() => setShowAdd(true)} />}
+      {/* Pestañas */}
+      <div className="inline-flex bg-canvas rounded-full p-1 mb-6">
+        <button onClick={() => setTab('active')} className={`px-5 py-2 rounded-full text-[13px] font-medium transition ${tab === 'active' ? 'bg-paper text-ink shadow-apple' : 'text-sub'}`}>
+          Activos {active.length > 0 && <span className="tabular-nums opacity-60">· {active.length}</span>}
+        </button>
+        <button onClick={() => setTab('done')} className={`px-5 py-2 rounded-full text-[13px] font-medium transition ${tab === 'done' ? 'bg-paper text-ink shadow-apple' : 'text-sub'}`}>
+          Realizados {done.length > 0 && <span className="tabular-nums opacity-60">· {done.length}</span>}
+        </button>
+      </div>
+
+      {list.length === 0 && (
+        tab === 'active'
+          ? <EmptyState icon="◷" title="No hay sesiones activas" description="Todo al día, o planifica una nueva sesión para tus jugadores." actionLabel="+ Nueva sesión" onAction={() => setShowAdd(true)} />
+          : <EmptyState icon="✓" title="Aún no hay sesiones realizadas" description="Aquí verás el historial de entrenamientos completados por tus jugadores." />
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {training.map(s => {
+        {list.map(s => {
           const exs = sessionEx.filter(e => e.session_id === s.id).sort((a, b) => a.ord - b.ord)
           return (
-            <div key={s.id} className="card p-5 group">
+            <div key={s.id} className={`card p-5 group ${s.completed ? 'opacity-[0.92]' : ''}`}>
               <div className="flex justify-between items-start mb-3">
                 <div>
                   <div className="font-medium text-ink text-[15px]">{getPlayerName(players, s.player_id)}</div>
-                  <div className="text-[12px] text-muted tnum">{s.date} · {s.type}</div>
+                  <div className="text-[12px] text-muted tnum">{s.date} · {s.type}{s.completed && s.completed_at ? ` · hecho ${s.completed_at.slice(0, 10)}` : ''}</div>
                 </div>
                 <div className="flex items-center gap-2">
                   {s.completed ? <span className="chip bg-volt text-ink">Hecho</span> : <span className="chip">Pendiente</span>}

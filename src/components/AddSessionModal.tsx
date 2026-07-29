@@ -91,17 +91,46 @@ export default function AddSessionModal({ players, coachId, prePlayerId, editSes
         <button onClick={addEx} className="btn-line w-full text-[13px]">+ Añadir ejercicio</button>
 
         {exList.map((e, i) => (
-          <div key={i} className="flex items-center gap-2 bg-paper rounded-lg px-3 py-2 mt-2 text-[13px]">
-            <span className="w-5 h-5 rounded bg-ink text-paper flex items-center justify-center text-[10px] font-bold">{i + 1}</span>
-            <span className="flex-1 font-medium text-ink">{e.title}</span>
-            <span className="text-[11px] text-muted">{[e.series && e.series + '×' + e.reps, e.weight].filter(Boolean).join(' · ')}</span>
-            <button onClick={() => setExList(exList.filter((_, j) => j !== i))} className="text-muted hover:text-ink">✕</button>
-          </div>
+          <EditableExercise key={i} ex={e} index={i}
+            onChange={upd => setExList(exList.map((x, j) => j === i ? upd : x))}
+            onRemove={() => setExList(exList.filter((_, j) => j !== i))} />
         ))}
       </div>
 
       <div className="mb-5"><label className="eyebrow block mb-2">Objetivo</label><input className="field" placeholder="Foco de la sesión" value={goal} onChange={e => setGoal(e.target.value)} /></div>
       <div className="flex justify-end gap-2"><button onClick={onClose} className="btn-line">Cancelar</button><button onClick={save} disabled={busy} className="btn-ink">{busy ? '...' : editing ? 'Guardar cambios' : 'Crear sesión'}</button></div>
     </Modal>
+  )
+}
+
+// Fila de ejercicio editable: se despliega al tocar para editar todos los campos + vídeo
+function EditableExercise({ ex, index, onChange, onRemove }: {
+  ex: Ex; index: number; onChange: (upd: Ex) => void; onRemove: () => void
+}) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="bg-paper rounded-lg mt-2 overflow-hidden">
+      <div className="flex items-center gap-2 px-3 py-2 text-[13px]">
+        <span className="w-5 h-5 rounded bg-ink text-paper flex items-center justify-center text-[10px] font-bold shrink-0">{index + 1}</span>
+        <button onClick={() => setOpen(o => !o)} className="flex-1 text-left min-w-0">
+          <span className="font-medium text-ink truncate block">{ex.title || 'Sin nombre'}</span>
+        </button>
+        <span className="text-[11px] text-muted shrink-0">{[ex.series && ex.series + '×' + ex.reps, ex.weight].filter(Boolean).join(' · ')}</span>
+        {ex.video_url && <span title="Tiene vídeo" className="text-[11px] shrink-0">🎬</span>}
+        <button onClick={() => setOpen(o => !o)} className="text-muted hover:text-ink shrink-0 text-[13px]">{open ? '▲' : '✎'}</button>
+        <button onClick={onRemove} className="text-muted hover:text-ink shrink-0">✕</button>
+      </div>
+      {open && (
+        <div className="px-3 pb-3 pt-1 space-y-2 border-t border-line">
+          <input className="field bg-canvas text-[13px]" placeholder="Nombre del ejercicio" value={ex.title} onChange={e => onChange({ ...ex, title: e.target.value })} />
+          <div className="grid grid-cols-3 gap-2">
+            <input className="field bg-canvas text-[13px]" placeholder="Series" value={ex.series} onChange={e => onChange({ ...ex, series: e.target.value })} />
+            <input className="field bg-canvas text-[13px]" placeholder="Reps" value={ex.reps} onChange={e => onChange({ ...ex, reps: e.target.value })} />
+            <input className="field bg-canvas text-[13px]" placeholder="Peso" value={ex.weight} onChange={e => onChange({ ...ex, weight: e.target.value })} />
+          </div>
+          <input className="field bg-canvas text-[13px]" placeholder="🎬 Enlace de vídeo (YouTube, Drive…)" value={ex.video_url} onChange={e => onChange({ ...ex, video_url: e.target.value })} />
+        </div>
+      )}
+    </div>
   )
 }
