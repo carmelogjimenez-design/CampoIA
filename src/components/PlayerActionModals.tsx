@@ -139,6 +139,22 @@ export function ImportSeasonModal({ player, onClose, onSaved }: { player: Player
           </p>
         )}
 
+        {/* La IA dice un número de partidos y ha extraído otro: se cortó por el camino */}
+        {(() => {
+          const esperados = data.season.played ?? data.season.callups ?? 0
+          if (esperados <= data.matches.length) return null
+          return (
+            <div className="card-line p-4 mb-4">
+              <p className="text-[13px] text-ink leading-relaxed">
+                ⚠ La IA menciona <span className="font-semibold tnum">{esperados}</span> partidos
+                pero solo he podido extraer <span className="font-semibold tnum">{data.matches.length}</span>.
+                Probablemente se cortó a mitad. Guarda estos y vuelve a importar el resto,
+                o pega la temporada en dos tandas.
+              </p>
+            </div>
+          )
+        })()}
+
         <div className="border border-line rounded-xl overflow-hidden mb-5">
           <div className="max-h-[34vh] overflow-y-auto">
             <table className="w-full text-[12px]">
