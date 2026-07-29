@@ -8,6 +8,7 @@ import PortalTraining from '../components/portal/PortalTraining'
 import PortalCheckin from '../components/portal/PortalCheckin'
 import PortalNutrition from '../components/portal/PortalNutrition'
 import PortalChat from '../components/portal/PortalChat'
+import { claimInviteCode } from '../lib/invite'
 
 const TABS: [string, string][] = [
   ['home', 'Inicio'], ['training', 'Entrenos'], ['checkin', 'Bienestar'], ['nutrition', 'Comida'], ['chat', 'Coach'],
@@ -18,6 +19,17 @@ export default function PlayerPortal() {
   const pd = usePlayerData()
   const [tab, setTab] = useState('home')
   const [unreadChat, setUnreadChat] = useState(0)
+  const [linkCode, setLinkCode] = useState('')
+  const [linkBusy, setLinkBusy] = useState(false)
+  const [linkError, setLinkError] = useState('')
+
+  async function link() {
+    setLinkBusy(true); setLinkError('')
+    const res = await claimInviteCode(linkCode)
+    setLinkBusy(false)
+    if (!res.ok) { setLinkError(res.error); return }
+    await pd.reload()
+  }
 
   const loadUnreadChat = async () => {
     if (!pd.profile) return
@@ -30,11 +42,32 @@ export default function PlayerPortal() {
   if (pd.loading) return <div className="min-h-screen flex items-center justify-center bg-canvas"><LoadingScreen /></div>
   if (pd.error) return <div className="min-h-screen flex items-center justify-center bg-canvas"><ErrorState message={pd.error} onRetry={pd.reload} /></div>
   if (!pd.profile) return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-canvas text-center p-8">
-      <div className="w-14 h-14 rounded-2xl bg-ink flex items-center justify-center mb-4"><span className="text-volt font-display font-bold text-[20px]">C</span></div>
-      <p className="text-ink font-medium text-[16px] mb-1">Tu cuenta aún no está vinculada</p>
-      <p className="text-sub text-[14px] max-w-xs mb-5">Pídele a tu entrenador que te asocie a tu ficha de jugador para acceder a tu portal.</p>
-      <button onClick={signOut} className="btn-line">Cerrar sesión</button>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-canvas p-6">
+      <div className="w-full max-w-[340px] text-center">
+        <div className="w-14 h-14 rounded-2xl bg-ink flex items-center justify-center mb-4 mx-auto"><span className="text-volt font-display font-bold text-[20px]">C</span></div>
+        <p className="text-ink font-medium text-[17px] mb-1.5">Vincula tu ficha</p>
+        <p className="text-sub text-[14px] leading-relaxed mb-6">
+          Introduce el código de acceso que te ha dado tu entrenador y entrarás en tu portal.
+        </p>
+
+        {linkError && (
+          <div className="card-line px-4 py-3 mb-4 text-[13px] text-ink text-left">⚠ {linkError}</div>
+        )}
+
+        <input className="field text-center tnum text-[21px] tracking-[0.32em] uppercase font-semibold mb-3"
+               value={linkCode} maxLength={6} placeholder="ABC123" autoCapitalize="characters" autoComplete="off"
+               onChange={e => setLinkCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
+               onKeyDown={e => e.key === 'Enter' && link()} />
+
+        <button onClick={link} disabled={linkBusy || linkCode.length < 4} className="btn-ink w-full py-3 text-[15px] mb-5">
+          {linkBusy ? 'Vinculando…' : 'Vincular mi ficha'}
+        </button>
+
+        <p className="text-[12px] text-muted mb-5">
+          ¿No tienes código? Pídeselo a tu entrenador: lo genera desde tu ficha en un toque.
+        </p>
+        <button onClick={signOut} className="text-[13px] text-muted hover:text-ink transition">Cerrar sesión</button>
+      </div>
     </div>
   )
 

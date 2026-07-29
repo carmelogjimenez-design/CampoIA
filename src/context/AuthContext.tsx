@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { Session } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 import { UserRole } from '../types/database'
+import { getPendingInvite, consumePendingInvite } from '../lib/invite'
 
 interface AuthState {
   session: Session | null
@@ -33,6 +34,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function resolveRole(s: Session | null) {
     if (!s) { setRole(null); setLoading(false); return }
+    // 0. Código de invitación pendiente: ahora que hay sesión, lo canjeamos
+    //    y la ficha del jugador queda vinculada a esta cuenta.
+    if (getPendingInvite()) await consumePendingInvite()
     // 1. Rol desde los metadatos del usuario (prioritario)
     const metaRole = s.user.user_metadata?.role as UserRole | undefined
     if (metaRole) { setRole(metaRole); setLoading(false); return }

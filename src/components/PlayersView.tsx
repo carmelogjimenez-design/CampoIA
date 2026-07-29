@@ -63,8 +63,14 @@ export default function PlayersView() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {filtered.map(p => (
           <button key={p.id} onClick={() => setSelected(p)} className="card p-5 text-left hover:shadow-apple-lg transition-shadow flex items-center gap-4 group">
-            <div className="w-12 h-12 rounded-full bg-canvas border border-line flex items-center justify-center font-display font-semibold text-ink overflow-hidden shrink-0">
-              {p.photo_url ? <img src={p.photo_url} className="w-full h-full object-cover" /> : initials(p.name)}
+            <div className="relative shrink-0">
+              <div className="w-12 h-12 rounded-full bg-canvas border border-line flex items-center justify-center font-display font-semibold text-ink overflow-hidden">
+                {p.photo_url ? <img src={p.photo_url} className="w-full h-full object-cover" /> : initials(p.name)}
+              </div>
+              {p.auth_user_id && (
+                <span title="Cuenta vinculada"
+                      className="absolute -right-0.5 -bottom-0.5 w-3.5 h-3.5 rounded-full bg-volt border-2 border-paper" />
+              )}
             </div>
             <div className="min-w-0 flex-1">
               <div className="font-medium text-ink truncate text-[15px]">{p.name}</div>

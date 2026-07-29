@@ -33,9 +33,10 @@ export default function PortalNutrition({ pd }: { pd: PlayerData }) {
   const dayItems = items.filter(i => i.day_index === day)
   const isToday = day === (new Date().getDay() + 6) % 7
 
-  // ¿marcada hoy? (solo cuenta para el día de hoy)
+  // ¿marcada hoy? Se casa por tipo de comida, no por descripción exacta:
+  // si el jugador anota lo que comió de verdad, la comida sigue contando.
   function loggedToday(meal: MealPlanItem) {
-    return logs.find(l => l.meal_type === meal.meal_type && (l.description ?? '') === (meal.description ?? ''))
+    return logs.find(l => (l.meal_type ?? '').toLowerCase() === meal.meal_type.toLowerCase())
   }
 
   async function toggleMeal(meal: MealPlanItem) {

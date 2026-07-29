@@ -1,23 +1,42 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { setPendingInvite, clearPendingInvite } from '../lib/invite'
 
 export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [mode, setMode] = useState<'login' | 'signup'>('login')
+  const [who, setWho] = useState<'coach' | 'player'>('coach')
+  const [code, setCode] = useState('')
   const [error, setError] = useState('')
+  const [info, setInfo] = useState('')
   const [busy, setBusy] = useState(false)
+
+  const isPlayerSignup = mode === 'signup' && who === 'player'
 
   async function submit() {
     if (!email.trim() || !password) { setError('Introduce tu correo y contraseña.'); return }
-    setError(''); setBusy(true)
+    if (isPlayerSignup && code.trim().length < 4) {
+      setError('Introduce el código de acceso que te ha dado tu entrenador.'); return
+    }
+    setError(''); setInfo(''); setBusy(true)
     try {
       if (mode === 'login') {
         const { error } = await supabase.auth.signInWithPassword({ email, password })
         if (error) throw error
       } else {
-        const { error } = await supabase.auth.signUp({ email, password, options: { data: { role: 'coach' } } })
-        if (error) throw error
+        // Dejamos el código guardado ANTES de registrar: en cuanto haya sesión,
+        // AuthContext lo canjea y vincula la ficha automáticamente.
+        if (isPlayerSignup) setPendingInvite(code)
+        const { data, error } = await supabase.auth.signUp({
+          email, password, options: { data: { role: who } },
+        })
+        if (error) { if (isPlayerSignup) clearPendingInvite(); throw error }
+        if (!data.session) {
+          setInfo(isPlayerSignup
+            ? 'Cuenta creada. Confirma tu correo y entra: vincularemos tu ficha automáticamente.'
+            : 'Cuenta creada. Confirma tu correo para poder entrar.')
+        }
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo continuar. Revisa el correo y la contraseña.')
@@ -75,12 +94,37 @@ export default function Login() {
         <div className="w-full max-w-[400px]">
           <div className="mb-8">
             <h2 className="font-display font-bold text-[28px] text-ink tracking-tighter2">{mode === 'login' ? 'Bienvenido de nuevo' : 'Crea tu cuenta'}</h2>
-            <p className="text-muted text-[15px] mt-1.5">{mode === 'login' ? 'Entra para gestionar a tus jugadores.' : 'Empieza a desarrollar a tus futbolistas.'}</p>
+            <p className="text-muted text-[15px] mt-1.5">
+              {mode === 'login' ? 'Entra en tu cuenta.'
+                : isPlayerSignup ? 'Únete con el código de tu entrenador.'
+                : 'Empieza a desarrollar a tus futbolistas.'}
+            </p>
           </div>
 
           {error && (
             <div className="bg-canvas text-ink text-[13px] rounded-xl px-4 py-3 mb-5 border border-line flex items-start gap-2">
               <span className="text-[14px]">⚠</span><span>{error}</span>
+            </div>
+          )}
+
+          {info && (
+            <div className="bg-volt/20 text-ink text-[13px] rounded-xl px-4 py-3 mb-5 border border-volt flex items-start gap-2">
+              <span className="text-[14px]">✓</span><span>{info}</span>
+            </div>
+          )}
+
+          {mode === 'signup' && (
+            <div className="mb-6">
+              <label className="eyebrow block mb-2">¿Quién eres?</label>
+              <div className="grid grid-cols-2 gap-1.5 bg-canvas rounded-xl p-1.5">
+                {([['coach', 'Soy coach'], ['player', 'Soy jugador']] as const).map(([id, label]) => (
+                  <button key={id} onClick={() => { setWho(id); setError(''); setInfo('') }}
+                          className={`py-2 rounded-[9px] text-[14px] font-medium transition ${
+                            who === id ? 'bg-paper text-ink shadow-apple' : 'text-muted hover:text-ink'}`}>
+                    {label}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 
@@ -90,13 +134,24 @@ export default function Login() {
           <input className="field mb-6" type="password" value={password} onChange={e => setPassword(e.target.value)}
                  onKeyDown={e => e.key === 'Enter' && submit()} placeholder="••••••••" autoComplete={mode === 'login' ? 'current-password' : 'new-password'} />
 
+          {isPlayerSignup && (
+            <>
+              <label className="eyebrow block mb-2">Código de acceso</label>
+              <input className="field mb-2 text-center tnum text-[19px] tracking-[0.32em] uppercase font-semibold"
+                     value={code} maxLength={6} placeholder="ABC123" autoCapitalize="characters" autoComplete="off"
+                     onChange={e => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
+                     onKeyDown={e => e.key === 'Enter' && submit()} />
+              <p className="text-[12px] text-muted mb-6">Son los 6 caracteres que te ha dado tu entrenador.</p>
+            </>
+          )}
+
           <button onClick={submit} disabled={busy} className="btn-ink w-full py-3.5 text-[15px] flex items-center justify-center gap-2">
-            {busy ? <><span className="w-4 h-4 border-2 border-paper/30 border-t-paper rounded-full animate-spin" />Un momento…</> : mode === 'login' ? 'Entrar' : 'Crear cuenta'}
+            {busy ? <><span className="w-4 h-4 border-2 border-paper/30 border-t-paper rounded-full animate-spin" />Un momento…</> : mode === 'login' ? 'Entrar' : isPlayerSignup ? 'Crear cuenta y vincular' : 'Crear cuenta'}
           </button>
 
           <p className="text-center text-[14px] text-muted mt-6">
             {mode === 'login' ? '¿Todavía no tienes cuenta? ' : '¿Ya tienes cuenta? '}
-            <button onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setError('') }} className="text-ink font-semibold hover:underline">
+            <button onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setError(''); setInfo('') }} className="text-ink font-semibold hover:underline">
               {mode === 'login' ? 'Crear una' : 'Entrar'}
             </button>
           </p>

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Player, TrainingSession, Match } from '../types/database'
 import { isGoalkeeper, initials } from '../lib/players'
+import { getAttributes } from '../lib/attributes'
 
 interface Props { players: Player[]; training: TrainingSession[]; matches: Match[] }
 
@@ -33,8 +34,8 @@ export default function MetricsView({ players, training, matches }: Props) {
   const totSessions = training.filter(t => t.completed).length
 
   const radar = all.find(x => x.p.id === radarPlayer)?.p
-  const base = radar?.score ?? 70
-  const attrs = radar?.ai_attributes ?? { Técnica: base - 4, Táctica: base - 7, Físico: base - 10, Mental: base - 2, Velocidad: base - 8, Lectura: base - 5 }
+  const radarSet = getAttributes(radar)
+  const attrs: Record<string, number> = radarSet.values
 
   return (
     <div className="animate-[fadeIn_.4s_ease]">
@@ -84,7 +85,12 @@ export default function MetricsView({ players, training, matches }: Props) {
               {players.map(p => <option key={p.id} value={p.id}>{p.name.split(' ')[0]}</option>)}
             </select>
           </div>
-          <Radar attrs={Object.fromEntries(Object.entries(attrs).map(([k, v]) => [k, Number(v)]))} />
+          {radarSet.rated
+            ? <Radar attrs={Object.fromEntries(Object.entries(attrs).map(([k, v]) => [k, Number(v)]))} />
+            : <div className="py-14 text-center">
+                <p className="text-ink text-[14px] font-medium mb-1">Sin valorar</p>
+                <p className="text-muted text-[12px] max-w-[200px] mx-auto leading-relaxed">Valora sus atributos desde su ficha para ver el perfil aquí.</p>
+              </div>}
         </div>
       </div>
 

@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Player } from '../types/database'
 import { supabase } from '../lib/supabase'
-import { askAI, playerContextString } from '../lib/aiCoach'
+import { askAI, playerContextString, structureSeason, SeasonImport } from '../lib/aiCoach'
+import { attributePairs } from '../lib/attributes'
 import { generateReport, ReportType, Frequency } from '../lib/reportGenerator'
 import { parsePlan, ParsedPlan } from './ExportPlanModal'
 import Modal from './Modal'
@@ -48,32 +49,174 @@ export function PlayerAIModal({ player, onClose, onExport }: { player: Player; o
   )
 }
 
-// ── Importar temporada: pega texto, la IA lo estructura ──
-export function ImportSeasonModal({ player, onClose }: { player: Player; onClose: () => void }) {
+// ── Importar temporada: la IA estructura el histórico y SE GUARDA ──
+export function ImportSeasonModal({ player, onClose, onSaved }: { player: Player; onClose: () => void; onSaved?: () => void }) {
   const [text, setText] = useState('')
-  const [result, setResult] = useState('')
-  const [busy, setBusy] = useState(false)
+  const [data, setData] = useState<SeasonImport | null>(null)
+  const [existing, setExisting] = useState(0)
+  const [replace, setReplace] = useState(false)
+  const [busy, setBusy] = useState('')
   const [error, setError] = useState('')
+  const [saved, setSaved] = useState(0)
 
-  async function run() {
+  async function structure() {
     if (!text.trim()) return
-    setBusy(true); setError(''); setResult('')
+    setBusy('ai'); setError(''); setData(null)
     try {
-      const out = await askAI({
-        playerContext: playerContextString(player),
-        question: `Estructura este histórico de temporada del jugador en un resumen claro por bloques (partidos, rendimiento, evolución). Texto:\n${text.slice(0, 3000)}`,
-      })
-      setResult(out)
-    } catch (e) { setError(e instanceof Error ? e.message : 'Error') } finally { setBusy(false) }
+      const out = await structureSeason(player, text)          // ← texto entero, sin recortar
+      if (!out.matches.length) {
+        setError('No he encontrado partidos en ese texto. Pega la tabla completa de la temporada, con las filas de cada jornada.')
+      } else {
+        const { count } = await supabase.from('matches')
+          .select('*', { count: 'exact', head: true }).eq('player_id', player.id)
+        setExisting(count ?? 0)
+        setData(out)
+      }
+    } catch (e) { setError(e instanceof Error ? e.message : 'Error') } finally { setBusy('') }
   }
 
+  async function save() {
+    if (!data) return
+    setBusy('save'); setError('')
+    try {
+      if (replace && existing > 0) {
+        const { error: delErr } = await supabase.from('matches').delete().eq('player_id', player.id)
+        if (delErr) throw delErr
+      }
+      const rows = data.matches.map(m => ({
+        coach_id: player.coach_id, player_id: player.id,
+        date: m.date, rival: m.rival, result: m.result, mins: m.mins,
+        called: m.role ? 'yes' : null, role: m.role,
+        goals: m.goals, assists: m.assists, conceded: m.conceded,
+        clean_sheet: m.clean_sheet, notes: m.notes,
+      }))
+      const { error: insErr } = await supabase.from('matches').insert(rows)
+      if (insErr) throw insErr
+      setSaved(rows.length)
+      onSaved?.()
+    } catch (e) { setError(e instanceof Error ? e.message : 'No se pudieron guardar los partidos.') }
+    finally { setBusy('') }
+  }
+
+  // ── Guardado ──
+  if (saved > 0) return (
+    <Modal title="Temporada importada" onClose={onClose}>
+      <div className="text-center py-6">
+        <div className="w-14 h-14 rounded-full bg-volt flex items-center justify-center text-ink text-[24px] mx-auto mb-4">✓</div>
+        <p className="text-ink text-[16px] font-medium mb-1.5">{saved} partidos guardados</p>
+        <p className="text-muted text-[14px] leading-relaxed max-w-[280px] mx-auto mb-6">
+          Ya están en su ficha: minutos, goles, convocatorias y porterías a cero se recalculan solos.
+        </p>
+        <button onClick={onClose} className="btn-ink">Ver la ficha</button>
+      </div>
+    </Modal>
+  )
+
+  // ── Vista previa antes de guardar ──
+  if (data) {
+    const withDate = data.matches.filter(m => m.date).length
+    const totMins = data.matches.reduce((a, m) => a + (m.mins ?? 0), 0)
+    const totGoals = data.matches.reduce((a, m) => a + (m.goals ?? 0), 0)
+    const starts = data.matches.filter(m => m.role === 'titular').length
+
+    return (
+      <Modal title="Revisa antes de guardar" onClose={onClose} wide>
+        {error && <div className="card-line px-4 py-3 mb-4 text-[13px] text-ink">⚠ {error}</div>}
+
+        <div className="grid grid-cols-4 gap-3 mb-5">
+          {([['Partidos', data.matches.length], ['Titular', starts], ['Minutos', totMins], ['Goles', totGoals]] as [string, number][])
+            .map(([l, v]) => (
+              <div key={l} className="bg-canvas rounded-xl p-3 text-center">
+                <div className="stat-num text-[22px] leading-none">{v}</div>
+                <div className="text-[11px] text-muted mt-1">{l}</div>
+              </div>
+            ))}
+        </div>
+
+        {withDate < data.matches.length && (
+          <p className="text-[12px] text-muted mb-4">
+            {data.matches.length - withDate} partidos sin fecha reconocible. Se guardan igual; puedes editarlos después.
+          </p>
+        )}
+
+        <div className="border border-line rounded-xl overflow-hidden mb-5">
+          <div className="max-h-[34vh] overflow-y-auto">
+            <table className="w-full text-[12px]">
+              <thead className="bg-canvas sticky top-0">
+                <tr className="text-muted">
+                  {['Fecha', 'Rival', 'Res.', 'Min', 'Rol', 'G', 'A'].map(h =>
+                    <th key={h} className="text-left font-semibold px-2.5 py-2">{h}</th>)}
+                </tr>
+              </thead>
+              <tbody>
+                {data.matches.map((m, i) => (
+                  <tr key={i} className="border-t border-line">
+                    <td className="px-2.5 py-2 tnum text-sub whitespace-nowrap">{m.date ?? '—'}</td>
+                    <td className="px-2.5 py-2 text-ink truncate max-w-[150px]">{m.rival ?? '—'}</td>
+                    <td className="px-2.5 py-2 tnum text-sub">{m.result ?? '—'}</td>
+                    <td className="px-2.5 py-2 tnum text-sub">{m.mins ?? '—'}</td>
+                    <td className="px-2.5 py-2 text-sub">{m.role ?? '—'}</td>
+                    <td className="px-2.5 py-2 tnum text-sub">{m.goals ?? 0}</td>
+                    <td className="px-2.5 py-2 tnum text-sub">{m.assists ?? 0}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {existing > 0 && (
+          <div className="card-line p-4 mb-5">
+            <p className="text-[13px] text-ink mb-3">
+              Este jugador ya tiene <span className="font-semibold tnum">{existing}</span> partidos guardados.
+            </p>
+            <div className="flex gap-2">
+              <button onClick={() => setReplace(false)}
+                      className={`flex-1 py-2 rounded-xl text-[13px] font-medium ${!replace ? 'bg-ink text-paper' : 'bg-canvas text-sub'}`}>
+                Añadir a los que hay
+              </button>
+              <button onClick={() => setReplace(true)}
+                      className={`flex-1 py-2 rounded-xl text-[13px] font-medium ${replace ? 'bg-ink text-paper' : 'bg-canvas text-sub'}`}>
+                Reemplazar todos
+              </button>
+            </div>
+          </div>
+        )}
+
+        {data.summary && (
+          <div className="bg-canvas rounded-xl p-4 text-[13px] text-sub leading-relaxed mb-5">{data.summary}</div>
+        )}
+
+        <div className="flex justify-end gap-2">
+          <button onClick={() => setData(null)} className="btn-line">Volver</button>
+          <button onClick={save} disabled={!!busy} className="btn-volt">
+            {busy === 'save' ? 'Guardando…' : `Guardar ${data.matches.length} partidos`}
+          </button>
+        </div>
+      </Modal>
+    )
+  }
+
+  // ── Pegar el histórico ──
   return (
     <Modal title="Importar temporada" onClose={onClose} wide>
-      <p className="text-sub text-[14px] mb-3">Pega el histórico de la temporada (partidos, notas, datos) y la IA lo estructurará.</p>
-      <textarea className="field mb-3" rows={6} value={text} onChange={e => setText(e.target.value)} placeholder="Pega aquí el texto de la temporada…" />
-      <div className="flex justify-end gap-2 mb-4"><button onClick={onClose} className="btn-line">Cerrar</button><button onClick={run} disabled={busy || !text.trim()} className="btn-ink">{busy ? 'Procesando…' : 'Estructurar con IA'}</button></div>
-      {error && <div className="bg-canvas border border-line text-ink text-[13px] rounded-xl px-4 py-3">⚠ {error}</div>}
-      {result && <div className="bg-canvas rounded-xl p-4 text-[14px] text-ink whitespace-pre-wrap max-h-[40vh] overflow-y-auto">{result}</div>}
+      <p className="text-sub text-[14px] leading-relaxed mb-4">
+        Pega el histórico entero de la temporada: la tabla de partidos de la federación, tus notas,
+        lo que tengas. La IA saca partido a partido y lo guarda en su ficha.
+      </p>
+      <textarea className="field mb-2 font-mono text-[12px]" rows={9} value={text}
+                onChange={e => setText(e.target.value)}
+                placeholder="Pega aquí la temporada completa…" />
+      <p className="text-[12px] text-muted mb-4 tnum">
+        {text.length.toLocaleString('es-ES')} caracteres{text.length > 40000 ? ' · puede tardar un poco' : ''}
+      </p>
+      {error && <div className="card-line px-4 py-3 mb-4 text-[13px] text-ink">⚠ {error}</div>}
+      <div className="flex justify-end gap-2">
+        <button onClick={onClose} className="btn-line">Cerrar</button>
+        <button onClick={structure} disabled={busy === 'ai' || !text.trim()} className="btn-ink">
+          {busy === 'ai' ? 'Leyendo la temporada…' : 'Estructurar con IA'}
+        </button>
+      </div>
     </Modal>
   )
 }
@@ -96,10 +239,7 @@ export function QuickReportModal({ player, onClose }: { player: Player; onClose:
         supabase.from('nutrition_logs').select('*').eq('player_id', player.id),
         supabase.from('physical_tests').select('*').eq('player_id', player.id),
       ])
-      const base = player.score ?? 70
-      const attrs: [string, number][] = player.ai_attributes && Object.keys(player.ai_attributes).length
-        ? Object.entries(player.ai_attributes).map(([k, v]) => [k, Math.round(Number(v))])
-        : [['Técnica', base - 4], ['Táctica', base - 7], ['Físico', base - 10], ['Mental', base - 2], ['Velocidad', base - 8]]
+      const attrs = attributePairs(player)   // vacío si no está valorado: no inventamos
       generateReport(type, freq, { player, matches: mt.data ?? [], sessions: tr.data ?? [], checkins: ck.data ?? [], nutrition: nu.data ?? [], tests: pt.data ?? [] }, attrs)
     } finally { setBusy(false); onClose() }
   }

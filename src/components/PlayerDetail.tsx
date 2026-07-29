@@ -12,6 +12,8 @@ import AvatarUpload from './AvatarUpload'
 import PhysicalTestModal from './PhysicalTestModal'
 import { PlayerAIModal, ImportSeasonModal, QuickReportModal } from './PlayerActionModals'
 import ExportPlanModal, { ParsedPlan } from './ExportPlanModal'
+import PlayerAccessModal from './PlayerAccessModal'
+import AttributesCard from './AttributesCard'
 
 interface Props { player: Player; onBack: () => void; players?: Player[] }
 
@@ -22,7 +24,7 @@ export default function PlayerDetail({ player: initial, onBack, players = [] }: 
   const [matches, setMatches] = useState<Match[]>([])
   const [sessions, setSessions] = useState<TrainingSession[]>([])
   const [tasks, setTasks] = useState<Task[]>([])
-  const [modal, setModal] = useState<null | 'edit' | 'session' | 'task' | 'match' | 'ai' | 'import' | 'report' | 'test'>(null)
+  const [modal, setModal] = useState<null | 'edit' | 'session' | 'task' | 'match' | 'ai' | 'import' | 'report' | 'test' | 'access'>(null)
   const [exportPlan, setExportPlan] = useState<ParsedPlan | null>(null)
   const gk = isGoalkeeper(player)
   const single = players.length ? players : [player]
@@ -53,16 +55,19 @@ export default function PlayerDetail({ player: initial, onBack, players = [] }: 
     ...(gk ? [['Encajados', totConceded], ['Porterías 0', cleanSheets]] as [string, number][] : []),
   ]
 
-  const base = player.score ?? 70
-  const attrs: Record<string, number> = player.ai_attributes ?? {
-    Técnica: base - 4, Táctica: base - 7, Físico: base - 10, Mental: base - 2, Velocidad: base - 8, Lectura: base - 5,
-  }
-  const maxAttr = Math.max(...Object.values(attrs).map(Number))
 
   const actions: [string, typeof modal, string][] = [
     ['+ Entrenamiento', 'session', 'ink'], ['+ Tarea', 'task', 'line'], ['+ Partido', 'match', 'line'], ['Test físico', 'test', 'line'],
     ['Análisis IA', 'ai', 'line'], ['Importar temporada', 'import', 'line'], ['Descargar informe', 'report', 'line'],
+    ['Acceso jugador', 'access', 'line'],
   ]
+
+  // Estado de vinculación con la cuenta del jugador
+  const access = player.auth_user_id
+    ? { dot: 'bg-volt', label: 'Vinculado' }
+    : player.invite_code
+      ? { dot: 'bg-ink/30', label: 'Código pendiente' }
+      : { dot: 'bg-line-strong', label: 'Sin vincular' }
 
   return (
     <div className="animate-[fadeIn_.4s_ease]">
@@ -74,7 +79,14 @@ export default function PlayerDetail({ player: initial, onBack, players = [] }: 
           <div className="flex items-center gap-3 sm:gap-5 min-w-0">
             <AvatarUpload playerId={player.id} name={player.name} photoUrl={player.photo_url} size={80} onUpdated={load} />
             <div>
-              <h1 className="h-page text-[24px] sm:text-[34px] leading-none">{player.name}</h1>
+              <div className="flex items-center gap-3 flex-wrap">
+                <h1 className="h-page text-[24px] sm:text-[34px] leading-none">{player.name}</h1>
+                <button onClick={() => setModal('access')}
+                        className="chip flex items-center gap-1.5 hover:bg-line transition shrink-0">
+                  <span className={`w-1.5 h-1.5 rounded-full ${access.dot}`} />
+                  {access.label}
+                </button>
+              </div>
               <p className="text-sub text-[15px] mt-2.5">
                 {player.pos_group ?? '—'}{player.pos ? ` · ${player.pos}` : ''}{player.age ? ` · ${player.age} años` : ''}
                 {player.foot ? ` · ${player.foot}` : ''}{player.club ? ` · ${player.club}` : ''}
@@ -115,23 +127,8 @@ export default function PlayerDetail({ player: initial, onBack, players = [] }: 
         </div>
 
         {/* Atributos */}
-        <div className="lg:col-span-3 card p-7">
-          <div className="eyebrow mb-6">Atributos</div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-5">
-            {Object.entries(attrs).map(([k, v]) => {
-              const val = Math.round(Number(v))
-              const isTop = Number(v) === maxAttr
-              return (
-                <div key={k}>
-                  <div className="flex items-baseline justify-between mb-2">
-                    <span className="text-[14px] text-ink">{k}</span>
-                    <span className="stat-num text-[14px]">{val}</span>
-                  </div>
-                  <div className="bar-track"><div className={isTop ? 'bar-fill-volt' : 'bar-fill'} style={{ width: `${Math.min(val, 100)}%` }} /></div>
-                </div>
-              )
-            })}
-          </div>
+        <div className="lg:col-span-3">
+          <AttributesCard player={player} onSaved={load} />
         </div>
       </div>
 
@@ -170,13 +167,14 @@ export default function PlayerDetail({ player: initial, onBack, players = [] }: 
       </div>
 
       {/* Modales */}
+      {modal === 'access' && <PlayerAccessModal player={player} onClose={() => setModal(null)} onChanged={load} />}
       {modal === 'edit' && <EditPlayerModal player={player} onClose={() => setModal(null)} onSaved={load} />}
       {modal === 'session' && <AddSessionModal players={single} coachId={coachId} prePlayerId={player.id} onClose={() => setModal(null)} onSaved={load} />}
       {modal === 'task' && <AddTaskModal players={single} coachId={coachId} prePlayerId={player.id} onClose={() => setModal(null)} onSaved={load} />}
       {modal === 'match' && <AddMatchModal players={single} coachId={coachId} prePlayerId={player.id} onClose={() => setModal(null)} onSaved={load} />}
       {modal === 'test' && <PhysicalTestModal player={player} coachId={coachId} onClose={() => setModal(null)} />}
       {modal === 'ai' && <PlayerAIModal player={player} onClose={() => setModal(null)} onExport={p => { setModal(null); setExportPlan(p) }} />}
-      {modal === 'import' && <ImportSeasonModal player={player} onClose={() => setModal(null)} />}
+      {modal === 'import' && <ImportSeasonModal player={player} onClose={() => setModal(null)} onSaved={load} />}
       {modal === 'report' && <QuickReportModal player={player} onClose={() => setModal(null)} />}
       {exportPlan && <ExportPlanModal plan={exportPlan} playerId={player.id} coachId={coachId} onClose={() => setExportPlan(null)} onDone={load} />}
     </div>

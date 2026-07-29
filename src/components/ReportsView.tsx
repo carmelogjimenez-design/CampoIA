@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { attributePairs } from '../lib/attributes'
 import { Player } from '../types/database'
 import { supabase } from '../lib/supabase'
 import { initials } from '../lib/players'
@@ -14,9 +15,7 @@ const TYPES: [ReportType, string, string, string][] = [
 const FREQS: [Frequency, string][] = [['semanal', 'Semanal'], ['mensual', 'Mensual'], ['trimestral', 'Trimestral'], ['anual', 'Anual']]
 
 function defaultAttrs(p?: Player): [string, number][] {
-  if (p?.ai_attributes && Object.keys(p.ai_attributes).length) return Object.entries(p.ai_attributes).map(([k, v]) => [k, Math.round(Number(v))])
-  const base = p?.score ?? 70
-  return [['Técnica', base - 4], ['Táctica', base - 7], ['Físico', base - 10], ['Mental', base - 2], ['Velocidad', base - 8]]
+  return attributePairs(p)   // vacío si el jugador no está valorado
 }
 
 export default function ReportsView({ players }: Props) {
