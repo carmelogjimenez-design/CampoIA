@@ -97,17 +97,40 @@ async function callAdmin<T>(action: string, payload: Record<string, unknown> = {
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) throw new Error('Sin sesión.')
 
-  const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-api`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${session.access_token}`,
-      'apikey': import.meta.env.VITE_SUPABASE_KEY,
-    },
-    body: JSON.stringify({ action, ...payload }),
-  })
-  const json = await res.json()
-  if (json.error) throw new Error(json.error)
+  let res: Response
+  try {
+    res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-api`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+        'apikey': import.meta.env.VITE_SUPABASE_KEY,
+      },
+      body: JSON.stringify({ action, ...payload }),
+    })
+  } catch {
+    // El navegador dice "Failed to fetch" tanto si la función no existe como
+    // si devolvió un error antes de poner las cabeceras CORS. Lo traducimos.
+    throw new Error(
+      'No se pudo contactar con la Edge Function «admin-api». Comprueba en Supabase → Edge Functions ' +
+      'que existe una función llamada exactamente admin-api y que está desplegada. ' +
+      'Si existe, entra en ella y desactiva «Verify JWT with legacy secret».',
+    )
+  }
+
+  if (res.status === 404) {
+    throw new Error('La Edge Function «admin-api» no existe en Supabase. Créala y despliégala.')
+  }
+
+  let json: Record<string, unknown>
+  try {
+    json = await res.json()
+  } catch {
+    throw new Error(`La función respondió ${res.status} sin datos. Mira los Logs de admin-api en Supabase.`)
+  }
+
+  if (json.error) throw new Error(String(json.error))
+  if (!res.ok) throw new Error(`Error ${res.status} en admin-api.`)
   return json as T
 }
 
