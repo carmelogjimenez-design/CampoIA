@@ -17,14 +17,18 @@ import HabitsView from '../components/HabitsView'
 import NutritionView from '../components/NutritionView'
 import AICoachView from '../components/AICoachView'
 import ReportsView from '../components/ReportsView'
+import AdminPanel from '../components/AdminPanel'
+import { checkIsAdmin, touchLastSeen } from '../lib/admin'
 
-const NAV = [
+const BASE_NAV = [
   { section: 'General', items: [['dashboard', 'Dashboard'], ['players', 'Jugadores']] },
   { section: 'Planificación', items: [['training', 'Entrenamientos'], ['calendar', 'Calendario'], ['tasks', 'Tareas']] },
   { section: 'Competición', items: [['matches', 'Partidos'], ['metrics', 'Métricas']] },
   { section: 'Seguimiento', items: [['habits', 'Bienestar'], ['nutrition', 'Alimentación'], ['messages', 'Mensajes'], ['vanalysis', 'Vídeo']] },
   { section: 'Herramientas', items: [['ai', 'IA Coach'], ['reports', 'Informes']] },
 ]
+
+const ADMIN_NAV = { section: 'Sistema', items: [['admin', 'Superadmin']] }
 
 export default function CoachDashboard() {
   const { signOut } = useAuth()
@@ -33,6 +37,17 @@ export default function CoachDashboard() {
   const data = useCoachData()
   const coachId = data.coachId ?? ''
   const [unread, setUnread] = useState(0)
+  const [isAdmin, setIsAdmin] = useState(false)
+
+  // El acceso de admin lo decide la tabla app_admins en servidor,
+  // no un email escrito aquí. Ocultar el menú es solo cosmético:
+  // la Edge Function vuelve a comprobarlo en cada acción.
+  useEffect(() => {
+    checkIsAdmin().then(setIsAdmin)
+    touchLastSeen()
+  }, [])
+
+  const NAV = isAdmin ? [...BASE_NAV, ADMIN_NAV] : BASE_NAV
 
   const loadUnread = async () => {
     if (!coachId) return

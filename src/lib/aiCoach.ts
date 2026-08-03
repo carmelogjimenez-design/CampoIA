@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { logAiUsage } from './admin'
 import { Player } from '../types/database'
 import { posLabel } from './positions'
 
@@ -9,7 +10,7 @@ export function playerContextString(p?: Player): string {
     + `${p.foot ? `Pie: ${p.foot}. ` : ''}${p.height_cm ? `Altura: ${p.height_cm}cm. ` : ''}${p.weight_kg ? `Peso: ${p.weight_kg}kg. ` : ''}`
 }
 
-export async function askAI(opts: {
+async function askAIRaw(opts: {
   question: string; playerContext: string
   conversation?: { role: 'user' | 'assistant'; content: string }[]
 }): Promise<string> {
@@ -32,6 +33,23 @@ export async function askAI(opts: {
   if (!res.ok) throw new Error(`Error ${res.status}`)
   if (!json.text) throw new Error('La IA respondió vacío' + (json.finishReason ? ` (${json.finishReason})` : ''))
   return json.text as string
+}
+
+/** askAI con telemetría: mide duración y tamaño para el panel de superadmin. */
+export async function askAI(args: Parameters<typeof askAIRaw>[0]): Promise<string> {
+  const t0 = Date.now()
+  const promptChars = (args.question?.length ?? 0) + (args.playerContext?.length ?? 0)
+  try {
+    const out = await askAIRaw(args)
+    logAiUsage({ mode: 'chat', promptChars, outputChars: out.length, ok: true, ms: Date.now() - t0 })
+    return out
+  } catch (e) {
+    logAiUsage({
+      mode: 'chat', promptChars, outputChars: 0, ok: false,
+      error: e instanceof Error ? e.message : 'error', ms: Date.now() - t0,
+    })
+    throw e
+  }
 }
 
 // ════════════════════════════════════════════════════════════
@@ -160,6 +178,7 @@ async function askAIJson<T>(
   prompt: string,
   expectKey?: string,
 ): Promise<T> {
+  const t0 = Date.now()
   let usedFallback = false
   let json = await callEdge({ mode, prompt })
 
@@ -182,8 +201,12 @@ async function askAIJson<T>(
     })
   }
 
-  if (json.error) throw new Error(json.error)
+  if (json.error) {
+    logAiUsage({ mode, promptChars: prompt.length, outputChars: 0, ok: false, error: json.error, ms: Date.now() - t0 })
+    throw new Error(json.error)
+  }
   const raw = json.text ?? ''
+  logAiUsage({ mode, promptChars: prompt.length, outputChars: raw.length, ok: !!raw.trim(), ms: Date.now() - t0 })
   if (!raw.trim()) throw new AiJsonError('La IA respondió vacío.', '', usedFallback)
 
   let parsed = extractJson<T>(raw, expectKey)
