@@ -1,16 +1,18 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
-  AdminUser, AdminStats, listUsers, getStats,
+  AdminUser, AdminStats, AdminPlayer, CoachDetail,
+  listUsers, getStats, listPlayers, getCoachDetail,
   suspendUser, activateUser, resetPassword, confirmEmail, deleteUser,
 } from '../lib/admin'
-import Modal from './Modal'
+import { posLabel } from '../lib/positions'
 import { initials } from '../lib/players'
+import Modal from './Modal'
 
-type Tab = 'resumen' | 'usuarios' | 'ia' | 'errores' | 'registro'
+type Tab = 'resumen' | 'coaches' | 'jugadores' | 'ia' | 'errores' | 'registro'
 
 const TABS: [Tab, string][] = [
-  ['resumen', 'Resumen'], ['usuarios', 'Usuarios'], ['ia', 'Consumo IA'],
-  ['errores', 'Errores'], ['registro', 'Registro'],
+  ['resumen', 'Resumen'], ['coaches', 'Coaches'], ['jugadores', 'Jugadores'],
+  ['ia', 'Consumo IA'], ['errores', 'Errores'], ['registro', 'Registro'],
 ]
 
 const fecha = (s: string | null) => s
@@ -19,19 +21,31 @@ const fecha = (s: string | null) => s
 const fechaHora = (s: string) =>
   new Date(s).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 
+/** "hace 3 días" — más útil que una fecha para ver quién está vivo. */
+function hace(s: string | null): string {
+  if (!s) return 'nunca'
+  const d = Math.floor((Date.now() - new Date(s).getTime()) / 864e5)
+  if (d === 0) return 'hoy'
+  if (d === 1) return 'ayer'
+  if (d < 30) return `hace ${d} días`
+  if (d < 365) return `hace ${Math.floor(d / 30)} meses`
+  return `hace ${Math.floor(d / 365)} años`
+}
+
 export default function AdminPanel() {
   const [tab, setTab] = useState<Tab>('resumen')
   const [users, setUsers] = useState<AdminUser[]>([])
+  const [players, setPlayers] = useState<AdminPlayer[]>([])
   const [stats, setStats] = useState<AdminStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [sel, setSel] = useState<AdminUser | null>(null)
+  const [coachId, setCoachId] = useState<string | null>(null)
 
   async function load() {
     setLoading(true); setError('')
     try {
-      const [u, s] = await Promise.all([listUsers(), getStats()])
-      setUsers(u); setStats(s)
+      const [u, s, p] = await Promise.all([listUsers(), getStats(), listPlayers()])
+      setUsers(u); setStats(s); setPlayers(p)
     } catch (e) { setError(e instanceof Error ? e.message : 'Error') }
     finally { setLoading(false) }
   }
@@ -39,7 +53,6 @@ export default function AdminPanel() {
 
   return (
     <div className="animate-[fadeIn_.4s_ease]">
-      {/* Cabecera oscura: deja claro que esto no es la app de coach */}
       <div className="bg-ink rounded-3xl p-7 sm:p-9 mb-6 relative overflow-hidden">
         <div className="absolute -right-16 -top-16 w-56 h-56 rounded-full bg-volt/10 blur-3xl" />
         <div className="relative flex flex-col sm:flex-row items-start sm:items-end sm:justify-between gap-4">
@@ -50,7 +63,7 @@ export default function AdminPanel() {
             </h1>
             {stats && (
               <p className="text-paper/50 text-[13px] mt-3">
-                {stats.totals.coaches} cuentas · {stats.totals.players} jugadores · {stats.totals.ai30} llamadas de IA este mes
+                {stats.totals.coaches} cuentas · {players.length} jugadores · {stats.totals.ai30} llamadas de IA este mes
               </p>
             )}
           </div>
@@ -69,6 +82,8 @@ export default function AdminPanel() {
                   className={`shrink-0 px-4 py-2 rounded-full text-[13px] font-medium transition ${
                     tab === id ? 'bg-ink text-paper' : 'bg-paper text-sub border border-line hover:border-line-strong'}`}>
             {label}
+            {id === 'coaches' && users.length ? ` · ${users.length}` : ''}
+            {id === 'jugadores' && players.length ? ` · ${players.length}` : ''}
             {id === 'errores' && stats?.totals.errors30 ? ` · ${stats.totals.errors30}` : ''}
           </button>
         ))}
@@ -76,13 +91,14 @@ export default function AdminPanel() {
 
       {loading && !stats && <p className="text-muted text-[15px]">Cargando…</p>}
 
-      {tab === 'resumen' && stats && <Resumen stats={stats} users={users} />}
-      {tab === 'usuarios' && <Usuarios users={users} onPick={setSel} />}
+      {tab === 'resumen' && stats && <Resumen stats={stats} users={users} players={players} onGo={setTab} />}
+      {tab === 'coaches' && <Coaches users={users} players={players} onPick={setCoachId} />}
+      {tab === 'jugadores' && <Jugadores players={players} onPickCoach={setCoachId} />}
       {tab === 'ia' && stats && <ConsumoIA stats={stats} users={users} />}
       {tab === 'errores' && stats && <Errores stats={stats} users={users} />}
       {tab === 'registro' && stats && <Registro stats={stats} />}
 
-      {sel && <UserModal u={sel} onClose={() => setSel(null)} onChanged={load} />}
+      {coachId && <CoachModal userId={coachId} onClose={() => setCoachId(null)} onChanged={load} />}
     </div>
   )
 }
@@ -91,36 +107,35 @@ export default function AdminPanel() {
 // RESUMEN
 // ════════════════════════════════════════════════════════════
 
-function Resumen({ stats, users }: { stats: AdminStats; users: AdminUser[] }) {
+function Resumen({ stats, users, players, onGo }: {
+  stats: AdminStats; users: AdminUser[]; players: AdminPlayer[]; onGo: (t: Tab) => void
+}) {
   const t = stats.totals
   const activos30 = users.filter(u =>
     u.last_sign_in_at && Date.now() - new Date(u.last_sign_in_at).getTime() < 30 * 864e5).length
+  const vinculados = players.filter(p => p.linked).length
 
-  // Altas por semana, últimas 10
   const semanas = useMemo(() => {
     const map = new Map<string, number>()
     for (const iso of stats.signups) {
       const d = new Date(iso)
       d.setDate(d.getDate() - ((d.getDay() + 6) % 7))
-      const k = d.toISOString().slice(0, 10)
-      map.set(k, (map.get(k) ?? 0) + 1)
+      map.set(d.toISOString().slice(0, 10), (map.get(d.toISOString().slice(0, 10)) ?? 0) + 1)
     }
     return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0])).slice(-10)
   }, [stats.signups])
-
   const maxAltas = Math.max(...semanas.map(s => s[1]), 1)
 
   return (
     <>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <Kpi v={t.coaches} l="Cuentas" sub={t.suspended ? `${t.suspended} suspendidas` : 'todas activas'} />
+        <Kpi v={t.coaches} l="Cuentas" sub={t.suspended ? `${t.suspended} suspendidas` : 'todas activas'} onClick={() => onGo('coaches')} />
         <Kpi v={activos30} l="Activos 30 días" sub={t.coaches ? `${Math.round(activos30 / t.coaches * 100)}% del total` : ''} />
-        <Kpi v={t.players} l="Jugadores" />
-        <Kpi v={t.ai30} l="Llamadas IA · 30 días" sub={t.aiFail ? `${t.aiFail} fallidas en total` : 'sin fallos'} />
+        <Kpi v={players.length} l="Jugadores" sub={`${vinculados} con acceso propio`} onClick={() => onGo('jugadores')} />
+        <Kpi v={t.ai30} l="Llamadas IA · 30 días" sub={t.aiFail ? `${t.aiFail} fallidas` : 'sin fallos'} onClick={() => onGo('ia')} />
       </div>
 
-      {/* Cosas que requieren tu atención */}
-      <Atencion stats={stats} users={users} />
+      <Atencion stats={stats} users={users} players={players} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="card p-7">
@@ -129,8 +144,7 @@ function Resumen({ stats, users }: { stats: AdminStats; users: AdminUser[] }) {
             <div className="flex items-end gap-1.5 h-32">
               {semanas.map(([k, n]) => (
                 <div key={k} className="flex-1 flex flex-col items-center gap-2" title={`${k}: ${n}`}>
-                  <div className="w-full bg-ink rounded-t-md transition-all"
-                       style={{ height: `${(n / maxAltas) * 100}%`, minHeight: 4 }} />
+                  <div className="w-full bg-ink rounded-t-md" style={{ height: `${(n / maxAltas) * 100}%`, minHeight: 4 }} />
                   <span className="text-[10px] text-faint tnum">{k.slice(8, 10)}/{k.slice(5, 7)}</span>
                 </div>
               ))}
@@ -139,50 +153,51 @@ function Resumen({ stats, users }: { stats: AdminStats; users: AdminUser[] }) {
         </div>
 
         <div className="card p-7">
-          <div className="eyebrow mb-5">Contenido creado</div>
+          <div className="eyebrow mb-5">Uso de la plataforma</div>
           <div className="space-y-4">
-            {([['Partidos', t.matches], ['Sesiones', t.sessions], ['Jugadores', t.players]] as [string, number][]).map(([l, v]) => (
+            {([
+              ['Jugadores por cuenta', t.coaches ? (players.length / t.coaches).toFixed(1) : '0'],
+              ['Partidos registrados', String(t.matches)],
+              ['Sesiones creadas', String(t.sessions)],
+              ['Jugadores con portal', `${vinculados} de ${players.length}`],
+            ] as [string, string][]).map(([l, v]) => (
               <div key={l} className="flex items-baseline justify-between">
                 <span className="text-[14px] text-sub">{l}</span>
-                <span className="stat-num text-[22px]">{v}</span>
+                <span className="stat-num text-[20px]">{v}</span>
               </div>
             ))}
           </div>
-          <p className="text-[11px] text-faint mt-5 leading-relaxed">
-            Media de {t.coaches ? (t.players / t.coaches).toFixed(1) : 0} jugadores por cuenta.
-          </p>
         </div>
       </div>
     </>
   )
 }
 
-function Atencion({ stats, users }: { stats: AdminStats; users: AdminUser[] }) {
+function Atencion({ stats, users, players }: { stats: AdminStats; users: AdminUser[]; players: AdminPlayer[] }) {
   const avisos: { txt: string; grave?: boolean }[] = []
 
   const sinConfirmar = users.filter(u => !u.email_confirmed)
   if (sinConfirmar.length) avisos.push({
-    txt: `${sinConfirmar.length} ${sinConfirmar.length === 1 ? 'cuenta' : 'cuentas'} sin confirmar el correo. Es la causa más común de "no puedo entrar": puedes confirmarlas a mano desde Usuarios.`,
+    txt: `${sinConfirmar.length} ${sinConfirmar.length === 1 ? 'cuenta' : 'cuentas'} sin confirmar el correo. Es la causa más común de "no puedo entrar": desde Coaches puedes confirmarlas a mano.`,
   })
-
   if (stats.totals.suspended) avisos.push({
     txt: `${stats.totals.suspended} ${stats.totals.suspended === 1 ? 'cuenta suspendida' : 'cuentas suspendidas'}.`,
   })
-
   if (stats.totals.errors30) avisos.push({
     txt: `${stats.totals.errors30} errores registrados en los últimos 30 días.`, grave: true,
   })
-
   const ratioFallo = stats.usage.length ? stats.usage.filter(r => !r.ok).length / stats.usage.length : 0
   if (ratioFallo > 0.1) avisos.push({
     txt: `${Math.round(ratioFallo * 100)}% de las llamadas a la IA están fallando. Revisa la Edge Function.`, grave: true,
   })
-
   const dormidas = users.filter(u =>
-    u.players > 0 && u.last_sign_in_at &&
-    Date.now() - new Date(u.last_sign_in_at).getTime() > 30 * 864e5)
+    u.players > 0 && u.last_sign_in_at && Date.now() - new Date(u.last_sign_in_at).getTime() > 30 * 864e5)
   if (dormidas.length) avisos.push({
     txt: `${dormidas.length} ${dormidas.length === 1 ? 'cuenta lleva' : 'cuentas llevan'} más de un mes sin entrar teniendo jugadores.`,
+  })
+  const huerfanos = players.filter(p => !p.coach_email)
+  if (huerfanos.length) avisos.push({
+    txt: `${huerfanos.length} jugadores sin coach asignado. Puede que se borrara la cuenta y quedaran sueltos.`, grave: true,
   })
 
   if (!avisos.length) return (
@@ -207,53 +222,63 @@ function Atencion({ stats, users }: { stats: AdminStats; users: AdminUser[] }) {
   )
 }
 
-function Kpi({ v, l, sub }: { v: number; l: string; sub?: string }) {
+function Kpi({ v, l, sub, onClick }: { v: number | string; l: string; sub?: string; onClick?: () => void }) {
+  const Tag = onClick ? 'button' : 'div'
   return (
-    <div className="card p-6">
+    <Tag onClick={onClick} className={`card p-6 text-left ${onClick ? 'hover:border-line-strong transition cursor-pointer' : ''}`}>
       <div className="stat-num text-[34px] leading-none">{v}</div>
       <div className="text-[12px] text-muted mt-1.5">{l}</div>
       {sub && <div className="text-[11px] text-faint mt-1">{sub}</div>}
-    </div>
+    </Tag>
   )
 }
 
 // ════════════════════════════════════════════════════════════
-// USUARIOS
+// COACHES
 // ════════════════════════════════════════════════════════════
 
-function Usuarios({ users, onPick }: { users: AdminUser[]; onPick: (u: AdminUser) => void }) {
+function Coaches({ users, players, onPick }: {
+  users: AdminUser[]; players: AdminPlayer[]; onPick: (id: string) => void
+}) {
   const [q, setQ] = useState('')
-  const [filtro, setFiltro] = useState<'todos' | 'coach' | 'player' | 'suspended'>('todos')
+  const [filtro, setFiltro] = useState<'todos' | 'activos' | 'suspendidos' | 'sin_confirmar' | 'dormidos'>('todos')
 
   const vistos = users.filter(u => {
-    if (filtro === 'suspended' && u.status !== 'suspended') return false
-    if ((filtro === 'coach' || filtro === 'player') && u.role !== filtro) return false
+    if (filtro === 'suspendidos' && u.status !== 'suspended') return false
+    if (filtro === 'activos' && u.status !== 'active') return false
+    if (filtro === 'sin_confirmar' && u.email_confirmed) return false
+    if (filtro === 'dormidos') {
+      const dias = u.last_sign_in_at ? (Date.now() - new Date(u.last_sign_in_at).getTime()) / 864e5 : 999
+      if (dias < 30) return false
+    }
     if (!q.trim()) return true
     const t = q.toLowerCase()
     return (u.email ?? '').toLowerCase().includes(t) || (u.name ?? '').toLowerCase().includes(t)
   })
+
+  const jugadoresDe = (id: string) => players.filter(p => p.coach_id === id).length
 
   return (
     <>
       <div className="flex gap-2 mb-4 flex-wrap items-center">
         <input className="field flex-1 min-w-[220px]" value={q} onChange={e => setQ(e.target.value)}
                placeholder="Buscar por correo o nombre…" />
-        {([['todos', 'Todos'], ['coach', 'Coaches'], ['player', 'Jugadores'], ['suspended', 'Suspendidos']] as const)
-          .map(([id, l]) => (
-            <button key={id} onClick={() => setFiltro(id)}
-                    className={filtro === id ? 'chip bg-ink text-paper' : 'chip'}>{l}</button>
-          ))}
+        {([['todos', 'Todos'], ['activos', 'Activos'], ['suspendidos', 'Suspendidos'],
+           ['sin_confirmar', 'Sin confirmar'], ['dormidos', 'Inactivos +30d']] as const).map(([id, l]) => (
+          <button key={id} onClick={() => setFiltro(id)}
+                  className={filtro === id ? 'chip bg-ink text-paper' : 'chip'}>{l}</button>
+        ))}
       </div>
 
       <div className="card overflow-hidden">
-        <div className="hidden md:grid grid-cols-[2fr_1fr_repeat(4,.7fr)] gap-4 px-6 py-3 border-b border-line bg-canvas/60">
-          {['Usuario', 'Estado', 'Jugadores', 'Partidos', 'Llamadas IA', 'Último acceso'].map(h =>
+        <div className="hidden md:grid grid-cols-[2fr_1fr_repeat(4,.75fr)] gap-4 px-6 py-3 border-b border-line bg-canvas/60">
+          {['Coach', 'Estado', 'Jugadores', 'Partidos', 'IA', 'Última conexión'].map(h =>
             <div key={h} className="eyebrow">{h}</div>)}
         </div>
 
         {vistos.map(u => (
-          <button key={u.user_id} onClick={() => onPick(u)}
-                  className="w-full text-left grid grid-cols-2 md:grid-cols-[2fr_1fr_repeat(4,.7fr)] gap-4 px-5 md:px-6 py-4 border-b border-line last:border-0 hover:bg-canvas/50 transition">
+          <button key={u.user_id} onClick={() => onPick(u.user_id)}
+                  className="w-full text-left grid grid-cols-2 md:grid-cols-[2fr_1fr_repeat(4,.75fr)] gap-4 px-5 md:px-6 py-4 border-b border-line last:border-0 hover:bg-canvas/50 transition">
             <div className="col-span-2 md:col-span-1 flex items-center gap-3 min-w-0">
               <span className="w-8 h-8 rounded-full bg-canvas flex items-center justify-center text-[10px] font-semibold text-sub shrink-0">
                 {initials(u.name ?? u.email ?? '?')}
@@ -267,18 +292,17 @@ function Usuarios({ users, onPick }: { users: AdminUser[]; onPick: (u: AdminUser
               {u.status === 'suspended'
                 ? <span className="chip bg-ink text-paper">Suspendido</span>
                 : <span className="chip">{u.role === 'player' ? 'Jugador' : 'Coach'}</span>}
-              {!u.email_confirmed && <span className="chip" title="No ha confirmado el correo">✉ sin confirmar</span>}
+              {!u.email_confirmed && <span className="chip" title="No ha confirmado el correo">✉</span>}
             </div>
-            <Cell label="Jugadores" v={u.players} />
+            <Cell label="Jugadores" v={jugadoresDe(u.user_id)} />
             <Cell label="Partidos" v={u.matches} />
             <Cell label="IA" v={u.ai_calls} />
             <div className="flex flex-col justify-center">
-              <span className="md:hidden text-[11px] text-muted">Último acceso</span>
-              <span className="text-[13px] text-sub tnum">{fecha(u.last_sign_in_at)}</span>
+              <span className="md:hidden text-[11px] text-muted">Última conexión</span>
+              <span className="text-[13px] text-sub">{hace(u.last_sign_in_at)}</span>
             </div>
           </button>
         ))}
-
         {!vistos.length && <div className="p-12 text-center text-muted text-[14px]">Nada con estos filtros.</div>}
       </div>
     </>
@@ -295,10 +319,113 @@ function Cell({ label, v }: { label: string; v: number }) {
 }
 
 // ════════════════════════════════════════════════════════════
-// FICHA DE USUARIO
+// JUGADORES
 // ════════════════════════════════════════════════════════════
 
-function UserModal({ u, onClose, onChanged }: { u: AdminUser; onClose: () => void; onChanged: () => void }) {
+function Jugadores({ players, onPickCoach }: {
+  players: AdminPlayer[]; onPickCoach: (id: string) => void
+}) {
+  const [q, setQ] = useState('')
+  const [filtro, setFiltro] = useState<'todos' | 'vinculados' | 'sin_vincular' | 'inactivos'>('todos')
+  const [coach, setCoach] = useState('all')
+
+  const coaches = useMemo(() => {
+    const m = new Map<string, string>()
+    for (const p of players) if (p.coach_id) m.set(p.coach_id, p.coach_email ?? p.coach_name ?? p.coach_id)
+    return Array.from(m.entries())
+  }, [players])
+
+  const vistos = players.filter(p => {
+    if (coach !== 'all' && p.coach_id !== coach) return false
+    if (filtro === 'vinculados' && !p.linked) return false
+    if (filtro === 'sin_vincular' && p.linked) return false
+    if (filtro === 'inactivos' && p.matches + p.sessions > 0) return false
+    if (!q.trim()) return true
+    const t = q.toLowerCase()
+    return p.name.toLowerCase().includes(t)
+      || (p.club ?? '').toLowerCase().includes(t)
+      || (p.coach_email ?? '').toLowerCase().includes(t)
+  })
+
+  return (
+    <>
+      <div className="flex gap-2 mb-3 flex-wrap items-center">
+        <input className="field flex-1 min-w-[220px]" value={q} onChange={e => setQ(e.target.value)}
+               placeholder="Buscar por jugador, club o coach…" />
+        {([['todos', 'Todos'], ['vinculados', 'Con portal'], ['sin_vincular', 'Sin portal'],
+           ['inactivos', 'Sin actividad']] as const).map(([id, l]) => (
+          <button key={id} onClick={() => setFiltro(id)}
+                  className={filtro === id ? 'chip bg-ink text-paper' : 'chip'}>{l}</button>
+        ))}
+      </div>
+
+      {coaches.length > 1 && (
+        <div className="flex gap-1.5 mb-4 flex-wrap items-center">
+          <span className="eyebrow mr-1">Coach</span>
+          <button onClick={() => setCoach('all')} className={coach === 'all' ? 'chip bg-ink text-paper' : 'chip'}>Todos</button>
+          {coaches.map(([id, email]) => (
+            <button key={id} onClick={() => setCoach(id)}
+                    className={coach === id ? 'chip bg-ink text-paper' : 'chip'}>{email.split('@')[0]}</button>
+          ))}
+        </div>
+      )}
+
+      <div className="card overflow-hidden">
+        <div className="hidden md:grid grid-cols-[1.7fr_1.5fr_repeat(4,.7fr)] gap-4 px-6 py-3 border-b border-line bg-canvas/60">
+          {['Jugador', 'Coach', 'Partidos', 'Sesiones', 'Portal', 'Último check-in'].map(h =>
+            <div key={h} className="eyebrow">{h}</div>)}
+        </div>
+
+        {vistos.map(p => (
+          <div key={p.id} className="grid grid-cols-2 md:grid-cols-[1.7fr_1.5fr_repeat(4,.7fr)] gap-4 px-5 md:px-6 py-4 border-b border-line last:border-0">
+            <div className="col-span-2 md:col-span-1 flex items-center gap-3 min-w-0">
+              <span className="w-9 h-9 rounded-full bg-canvas flex items-center justify-center text-[10px] font-semibold text-sub shrink-0 overflow-hidden">
+                {p.photo_url ? <img src={p.photo_url} className="w-full h-full object-cover" /> : initials(p.name)}
+              </span>
+              <div className="min-w-0">
+                <div className="text-[14px] font-medium text-ink truncate">{p.name}</div>
+                <div className="text-[12px] text-muted truncate">
+                  {posLabel(p.pos, p.pos_group)}{p.age ? ` · ${p.age} años` : ''}{p.club ? ` · ${p.club}` : ''}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center min-w-0">
+              {p.coach_email ? (
+                <button onClick={() => onPickCoach(p.coach_id)}
+                        className="text-[13px] text-sub hover:text-ink transition truncate text-left">
+                  {p.coach_email}
+                </button>
+              ) : <span className="chip bg-ink text-paper">Sin coach</span>}
+            </div>
+
+            <Cell label="Partidos" v={p.matches} />
+            <Cell label="Sesiones" v={p.sessions} />
+            <div className="flex items-center">
+              {p.linked
+                ? <span className="chip bg-volt text-ink">Sí</span>
+                : <span className="chip">No</span>}
+            </div>
+            <div className="flex flex-col justify-center">
+              <span className="md:hidden text-[11px] text-muted">Último check-in</span>
+              <span className="text-[13px] text-sub">{hace(p.last_checkin)}</span>
+            </div>
+          </div>
+        ))}
+        {!vistos.length && <div className="p-12 text-center text-muted text-[14px]">Nada con estos filtros.</div>}
+      </div>
+    </>
+  )
+}
+
+// ════════════════════════════════════════════════════════════
+// FICHA DEL COACH
+// ════════════════════════════════════════════════════════════
+
+function CoachModal({ userId, onClose, onChanged }: {
+  userId: string; onClose: () => void; onChanged: () => void
+}) {
+  const [d, setD] = useState<CoachDetail | null>(null)
   const [busy, setBusy] = useState('')
   const [msg, setMsg] = useState('')
   const [error, setError] = useState('')
@@ -307,30 +434,80 @@ function UserModal({ u, onClose, onChanged }: { u: AdminUser; onClose: () => voi
   const [confirmMail, setConfirmMail] = useState('')
   const [razon, setRazon] = useState('')
 
+  useEffect(() => {
+    getCoachDetail(userId).then(setD).catch(e => setError(e.message))
+  }, [userId])
+
   async function run(tag: string, fn: () => Promise<unknown>, ok: string) {
     setBusy(tag); setError(''); setMsg('')
-    try { await fn(); setMsg(ok); onChanged() }
+    try { await fn(); setMsg(ok); onChanged(); getCoachDetail(userId).then(setD) }
     catch (e) { setError(e instanceof Error ? e.message : 'Error') }
     finally { setBusy('') }
   }
 
+  if (!d) return (
+    <Modal title="Cargando…" onClose={onClose}>
+      {error ? <p className="text-[13px] text-ink">⚠ {error}</p> : <p className="text-muted text-[14px]">Un momento…</p>}
+    </Modal>
+  )
+
+  const p = d.profile
+  const email = p?.email ?? ''
+  const iaMes = d.usage.filter(u => Date.now() - new Date(u.created_at).getTime() < 30 * 864e5)
+  const chars = d.usage.reduce((a, u) => a + (u.prompt_chars ?? 0) + (u.output_chars ?? 0), 0)
+  const sesionesHechas = d.sessions.filter(s => s.completed).length
+
   return (
-    <Modal title={u.name ?? u.email ?? 'Usuario'} onClose={onClose}>
+    <Modal title={p?.name ?? email ?? 'Coach'} onClose={onClose} wide>
       {error && <div className="card-line px-4 py-2.5 mb-4 text-[13px] text-ink">⚠ {error}</div>}
       {msg && <div className="bg-volt/20 border border-volt rounded-xl px-4 py-2.5 mb-4 text-[13px] text-ink">✓ {msg}</div>}
 
-      <div className="card-line p-4 mb-5">
-        <div className="text-[13px] text-sub mb-3">{u.email}</div>
-        <div className="grid grid-cols-2 gap-y-2 text-[13px]">
-          <Row l="Rol" v={u.role === 'player' ? 'Jugador' : 'Coach'} />
-          <Row l="Estado" v={u.status === 'suspended' ? 'Suspendido' : 'Activo'} />
-          <Row l="Alta" v={fecha(u.created_at)} />
-          <Row l="Último acceso" v={fecha(u.last_sign_in_at)} />
-          <Row l="Jugadores" v={String(u.players)} />
-          <Row l="Llamadas IA" v={String(u.ai_calls)} />
-        </div>
-        {u.suspend_reason && <p className="text-[12px] text-muted mt-3">Motivo: {u.suspend_reason}</p>}
+      <div className="flex items-center gap-2 mb-5 flex-wrap">
+        <span className="text-[13px] text-sub">{email}</span>
+        {p?.status === 'suspended' && <span className="chip bg-ink text-paper">Suspendido</span>}
+        {!d.auth.email_confirmed && <span className="chip">Correo sin confirmar</span>}
       </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+        {([['Jugadores', d.players.length], ['Partidos', p?.matches ?? 0],
+           ['Sesiones', `${sesionesHechas}/${d.sessions.length}`], ['Llamadas IA', d.usage.length]] as [string, string | number][])
+          .map(([l, v]) => (
+            <div key={l} className="bg-canvas rounded-xl p-3.5">
+              <div className="stat-num text-[20px] leading-none">{v}</div>
+              <div className="text-[11px] text-muted mt-1">{l}</div>
+            </div>
+          ))}
+      </div>
+
+      <div className="card-line p-4 mb-5">
+        <div className="grid grid-cols-2 gap-y-2 text-[13px]">
+          <Row l="Alta" v={fecha(d.auth.created_at)} />
+          <Row l="Última conexión" v={hace(d.auth.last_sign_in_at)} />
+          <Row l="IA este mes" v={String(iaMes.length)} />
+          <Row l="Tokens consumidos" v={`≈ ${Math.round(chars / 3500)}k`} />
+          <Row l="Último partido" v={d.lastMatch ? fecha(d.lastMatch) : '—'} />
+          <Row l="Rol" v={p?.role === 'player' ? 'Jugador' : 'Coach'} />
+        </div>
+        {p?.suspend_reason && <p className="text-[12px] text-muted mt-3">Motivo de la suspensión: {p.suspend_reason}</p>}
+      </div>
+
+      {d.players.length > 0 && (
+        <div className="mb-5">
+          <div className="eyebrow mb-3">Sus jugadores</div>
+          <div className="space-y-1.5">
+            {d.players.map(pl => (
+              <div key={pl.id} className="flex items-center gap-3 py-2 border-b border-line last:border-0">
+                <span className="w-7 h-7 rounded-full bg-canvas flex items-center justify-center text-[9px] font-semibold text-sub shrink-0 overflow-hidden">
+                  {pl.photo_url ? <img src={pl.photo_url} className="w-full h-full object-cover" /> : initials(pl.name)}
+                </span>
+                <span className="text-[14px] text-ink flex-1 truncate">{pl.name}</span>
+                <span className="text-[12px] text-muted">{posLabel(pl.pos, pl.pos_group)}</span>
+                {pl.auth_user_id && <span className="chip bg-volt text-ink">portal</span>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {link && (
         <div className="card-line p-4 mb-5">
@@ -344,30 +521,30 @@ function UserModal({ u, onClose, onChanged }: { u: AdminUser; onClose: () => voi
         <>
           <div className="space-y-2 mb-5">
             <button onClick={() => run('reset',
-                      async () => { const r = await resetPassword(u.user_id, u.email ?? ''); setLink(r.link) },
+                      async () => { const r = await resetPassword(userId, email); setLink(r.link) },
                       'Enlace de recuperación generado.')}
                     disabled={!!busy} className="btn-line w-full text-[14px]">
               {busy === 'reset' ? '…' : 'Restablecer contraseña'}
             </button>
 
-            {!u.email_confirmed && (
-              <button onClick={() => run('confirm', () => confirmEmail(u.user_id, u.email ?? ''), 'Correo confirmado.')}
+            {!d.auth.email_confirmed && (
+              <button onClick={() => run('confirm', () => confirmEmail(userId, email), 'Correo confirmado.')}
                       disabled={!!busy} className="btn-line w-full text-[14px]">
                 {busy === 'confirm' ? '…' : 'Confirmar su correo a mano'}
               </button>
             )}
 
-            {u.status === 'active' ? (
+            {p?.status === 'active' ? (
               <>
                 <input className="field text-[13px]" value={razon} onChange={e => setRazon(e.target.value)}
                        placeholder="Motivo de la suspensión (opcional)" />
-                <button onClick={() => run('susp', () => suspendUser(u.user_id, u.email ?? '', razon), 'Cuenta suspendida.')}
+                <button onClick={() => run('susp', () => suspendUser(userId, email, razon), 'Cuenta suspendida.')}
                         disabled={!!busy} className="btn-ink w-full text-[14px]">
                   {busy === 'susp' ? '…' : 'Suspender cuenta'}
                 </button>
               </>
             ) : (
-              <button onClick={() => run('act', () => activateUser(u.user_id, u.email ?? ''), 'Cuenta reactivada.')}
+              <button onClick={() => run('act', () => activateUser(userId, email), 'Cuenta reactivada.')}
                       disabled={!!busy} className="btn-volt w-full text-[14px]">
                 {busy === 'act' ? '…' : 'Reactivar cuenta'}
               </button>
@@ -381,18 +558,16 @@ function UserModal({ u, onClose, onChanged }: { u: AdminUser; onClose: () => voi
         <div className="card-line p-5">
           <p className="text-[14px] text-ink font-medium mb-1.5">Esto no se puede deshacer</p>
           <p className="text-[13px] text-sub leading-relaxed mb-4">
-            Se borran sus {u.players} jugadores, {u.matches} partidos, {u.sessions} sesiones
+            Se borran sus {d.players.length} jugadores, {p?.matches ?? 0} partidos, {d.sessions.length} sesiones
             y su cuenta. Si solo quieres bloquearle el acceso, suspende en vez de borrar.
           </p>
-          <label className="eyebrow block mb-2">Escribe «{u.email}» para confirmar</label>
+          <label className="eyebrow block mb-2">Escribe «{email}» para confirmar</label>
           <input className="field mb-4" value={confirmMail} onChange={e => setConfirmMail(e.target.value)} autoFocus />
           <div className="flex gap-2">
             <button onClick={() => setBorrando(false)} className="btn-line flex-1">Cancelar</button>
             <button onClick={() => run('del',
-                      async () => { await deleteUser(u.user_id, u.email ?? '', confirmMail); onClose() },
-                      'Cuenta eliminada.')}
-                    disabled={busy === 'del' || confirmMail !== u.email}
-                    className="btn-ink flex-1">
+                      async () => { await deleteUser(userId, email, confirmMail); onClose() }, 'Cuenta eliminada.')}
+                    disabled={busy === 'del' || confirmMail !== email} className="btn-ink flex-1">
               {busy === 'del' ? 'Eliminando…' : 'Eliminar'}
             </button>
           </div>
@@ -412,11 +587,9 @@ function Row({ l, v }: { l: string; v: string }) {
 
 function ConsumoIA({ stats, users }: { stats: AdminStats; users: AdminUser[] }) {
   const u = stats.usage
-  const nombre = (id: string | null) =>
-    users.find(x => x.user_id === id)?.email ?? 'desconocido'
+  const nombre = (id: string | null) => users.find(x => x.user_id === id)?.email ?? 'desconocido'
 
   const chars = u.reduce((a, r) => a + (r.prompt_chars ?? 0) + (r.output_chars ?? 0), 0)
-  // ~3,5 caracteres por token. Gemini Flash ronda 0,30 $/M tokens de salida.
   const tokens = Math.round(chars / 3.5)
   const coste = (tokens / 1_000_000) * 0.30
   const msMedio = u.length ? Math.round(u.reduce((a, r) => a + (r.ms ?? 0), 0) / u.length) : 0
@@ -451,8 +624,9 @@ function ConsumoIA({ stats, users }: { stats: AdminStats; users: AdminUser[] }) 
       {!u.length && (
         <div className="card p-12 text-center">
           <p className="text-ink text-[15px] font-medium mb-1.5">Todavía sin registros</p>
-          <p className="text-muted text-[13px] max-w-[360px] mx-auto leading-relaxed">
-            El consumo se empieza a medir desde que subes esta versión. Las llamadas anteriores no quedaron registradas.
+          <p className="text-muted text-[13px] max-w-[380px] mx-auto leading-relaxed">
+            El consumo se mide desde que subiste la versión con el registro activado.
+            Las llamadas anteriores no quedaron guardadas.
           </p>
         </div>
       )}
@@ -461,11 +635,11 @@ function ConsumoIA({ stats, users }: { stats: AdminStats; users: AdminUser[] }) 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="card p-7">
             <div className="eyebrow mb-5">Por cuenta</div>
-            {porCoach.slice(0, 10).map(([id, d]) => (
+            {porCoach.slice(0, 10).map(([id, dd]) => (
               <div key={id} className="flex items-center justify-between py-2.5 border-b border-line last:border-0">
                 <span className="text-[13px] text-ink truncate flex-1 mr-3">{nombre(id === 'null' ? null : id)}</span>
-                <span className="text-[12px] text-muted tnum mr-3">{Math.round(d.chars / 3500)}k tok</span>
-                <span className="stat-num text-[15px]">{d.n}</span>
+                <span className="text-[12px] text-muted tnum mr-3">{Math.round(dd.chars / 3500)}k tok</span>
+                <span className="stat-num text-[15px]">{dd.n}</span>
               </div>
             ))}
           </div>

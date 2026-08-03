@@ -53,6 +53,35 @@ export interface AuditRow {
   created_at: string
 }
 
+export interface AdminPlayer {
+  id: string
+  name: string
+  pos: string | null
+  pos_group: string | null
+  age: number | null
+  club: string | null
+  category: string | null
+  status: string | null
+  coach_id: string
+  coach_email: string | null
+  coach_name: string | null
+  photo_url: string | null
+  created_at: string
+  matches: number
+  sessions: number
+  last_checkin: string | null
+  linked: boolean
+}
+
+export interface CoachDetail {
+  profile: AdminUser | null
+  auth: { last_sign_in_at: string | null; email_confirmed: boolean; created_at: string | null }
+  players: { id: string; name: string; pos: string | null; pos_group: string | null; age: number | null; status: string | null; auth_user_id: string | null; photo_url: string | null }[]
+  usage: AiUsageRow[]
+  lastMatch: string | null
+  sessions: { date: string | null; completed: boolean }[]
+}
+
 export interface AdminStats {
   totals: {
     coaches: number; suspended: number; players: number; matches: number
@@ -91,6 +120,8 @@ export async function checkIsAdmin(): Promise<boolean> {
 
 export const listUsers = () => callAdmin<{ users: AdminUser[] }>('list_users').then(r => r.users)
 export const getStats = () => callAdmin<AdminStats>('stats')
+export const listPlayers = () => callAdmin<{ players: AdminPlayer[] }>('list_players').then(r => r.players)
+export const getCoachDetail = (user_id: string) => callAdmin<CoachDetail>('coach_detail', { user_id })
 export const suspendUser = (user_id: string, email: string, reason?: string) =>
   callAdmin('suspend', { user_id, email, reason })
 export const activateUser = (user_id: string, email: string) =>
