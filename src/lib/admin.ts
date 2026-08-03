@@ -93,13 +93,18 @@ export interface AdminStats {
   auditLog: AuditRow[]
 }
 
+// El nombre que ve uno en el panel de Supabase NO siempre es el endpoint real:
+// aquí la función "admin-api" responde en /hyper-action, igual que "ai-coach"
+// responde en /hyper-api. Este slug es el que manda.
+const ADMIN_ENDPOINT = 'hyper-action'
+
 async function callAdmin<T>(action: string, payload: Record<string, unknown> = {}): Promise<T> {
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) throw new Error('Sin sesión.')
 
   let res: Response
   try {
-    res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-api`, {
+    res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${ADMIN_ENDPOINT}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -112,25 +117,25 @@ async function callAdmin<T>(action: string, payload: Record<string, unknown> = {
     // El navegador dice "Failed to fetch" tanto si la función no existe como
     // si devolvió un error antes de poner las cabeceras CORS. Lo traducimos.
     throw new Error(
-      'No se pudo contactar con la Edge Function «admin-api». Comprueba en Supabase → Edge Functions ' +
-      'que existe una función llamada exactamente admin-api y que está desplegada. ' +
-      'Si existe, entra en ella y desactiva «Verify JWT with legacy secret».',
+      `No se pudo contactar con la Edge Function en /${ADMIN_ENDPOINT}. En Supabase → Edge Functions, ` +
+      'comprueba la URL real de la función de admin (la columna URL, no el nombre) y avísame si no coincide. ' +
+      'Si coincide, entra en ella y desactiva «Verify JWT with legacy secret».',
     )
   }
 
   if (res.status === 404) {
-    throw new Error('La Edge Function «admin-api» no existe en Supabase. Créala y despliégala.')
+    throw new Error(`No hay ninguna función en /${ADMIN_ENDPOINT}. Revisa la columna URL en Supabase → Edge Functions.`)
   }
 
   let json: Record<string, unknown>
   try {
     json = await res.json()
   } catch {
-    throw new Error(`La función respondió ${res.status} sin datos. Mira los Logs de admin-api en Supabase.`)
+    throw new Error(`La función respondió ${res.status} sin datos. Mira los Logs de la función en Supabase.`)
   }
 
   if (json.error) throw new Error(String(json.error))
-  if (!res.ok) throw new Error(`Error ${res.status} en admin-api.`)
+  if (!res.ok) throw new Error(`Error ${res.status} en la función de admin.`)
   return json as T
 }
 
