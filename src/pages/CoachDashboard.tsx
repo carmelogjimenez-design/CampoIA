@@ -28,7 +28,7 @@ const BASE_NAV = [
   { section: 'Herramientas', items: [['ai', 'IA Coach'], ['reports', 'Informes']] },
 ]
 
-const ADMIN_NAV = { section: 'Sistema', items: [['admin', 'Superadmin']] }
+const ADMIN_NAV = { section: 'Sistema', items: [['admin', 'Panel de control']] }
 
 export default function CoachDashboard() {
   const { signOut } = useAuth()
@@ -43,11 +43,23 @@ export default function CoachDashboard() {
   // no un email escrito aquí. Ocultar el menú es solo cosmético:
   // la Edge Function vuelve a comprobarlo en cada acción.
   useEffect(() => {
-    checkIsAdmin().then(setIsAdmin)
+    checkIsAdmin().then(ok => {
+      setIsAdmin(ok)
+      // Un admin sin jugadores no es coach de nadie: le llevamos a su panel
+      // en vez de a la pantalla de "añade tu primer jugador".
+      if (ok && !data.loading && data.players.length === 0) setView('admin')
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     touchLastSeen()
-  }, [])
+  }, [data.loading])
 
-  const NAV = isAdmin ? [...BASE_NAV, ADMIN_NAV] : BASE_NAV
+  // Un admin sin jugadores no está entrenando a nadie: la app es, para él,
+  // una herramienta de administración. Sistema arriba y las secciones de
+  // coaching debajo, disponibles pero sin estorbar.
+  const adminOnly = isAdmin && !data.loading && data.players.length === 0
+  const NAV = adminOnly
+    ? [ADMIN_NAV, ...BASE_NAV]
+    : isAdmin ? [...BASE_NAV, ADMIN_NAV] : BASE_NAV
 
   const loadUnread = async () => {
     if (!coachId) return
@@ -63,7 +75,10 @@ export default function CoachDashboard() {
     if (data.loading) return <LoadingScreen />
     if (data.error) return <ErrorState message={data.error} onRetry={data.reload} />
     // Onboarding: sin jugadores, invita a crear el primero (salvo en vistas donde no aplica)
-    if (!data.players.length && !['players'].includes(view)) return <FirstRun onAdd={() => setView('players')} />
+    // El panel de superadmin no necesita jugadores: no lo tapamos con el onboarding.
+    // Para un admin sin jugadores, el Dashboard ES el panel de control.
+    if (adminOnly && (view === 'dashboard' || view === 'admin')) return <AdminPanel />
+    if (!data.players.length && !['players', 'admin'].includes(view)) return <FirstRun onAdd={() => setView('players')} isAdmin={isAdmin} onAdmin={() => setView('admin')} />
     switch (view) {
       case 'dashboard': return <DashboardHome data={data} onGo={setView} />
       case 'players': return <PlayersView />

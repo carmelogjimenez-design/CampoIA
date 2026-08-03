@@ -38,16 +38,31 @@ export function EmptyState({ icon = '○', title, description, actionLabel, onAc
 }
 
 // Onboarding cuando el coach no tiene jugadores todavía
-export function FirstRun({ onAdd }: { onAdd: () => void }) {
+export function FirstRun({ onAdd, isAdmin, onAdmin }: {
+  onAdd: () => void; isAdmin?: boolean; onAdmin?: () => void
+}) {
   return (
     <div className="min-h-[60vh] flex flex-col items-center justify-center text-center px-6 animate-[fadeIn_.4s_ease]">
       <div className="w-16 h-16 rounded-3xl bg-ink flex items-center justify-center mb-5 relative">
         <span className="text-volt font-display font-bold text-[26px]">C</span>
         <span className="absolute -right-1 -top-1 w-3 h-3 rounded-full bg-volt animate-pulse" />
       </div>
-      <h2 className="font-display font-bold text-[26px] text-ink tracking-tightest mb-2">Bienvenido a CAMPO</h2>
-      <p className="text-sub text-[15px] max-w-md mb-6">Empieza añadiendo a tu primer jugador. Desde su ficha podrás planificar entrenamientos, registrar partidos, generar informes y usar la IA.</p>
-      <button onClick={onAdd} className="btn-volt">+ Añadir mi primer jugador</button>
+      <h2 className="font-display font-bold text-[26px] text-ink tracking-tightest mb-2">
+        {isAdmin ? 'Esta sección es para coaches' : 'Bienvenido a CAMPO'}
+      </h2>
+      <p className="text-sub text-[15px] max-w-md mb-6">
+        {isAdmin
+          ? 'Tu cuenta administra la plataforma, no entrena a jugadores. Puedes añadir uno si quieres probar la app desde dentro, o volver al panel de control.'
+          : 'Empieza añadiendo a tu primer jugador. Desde su ficha podrás planificar entrenamientos, registrar partidos, generar informes y usar la IA.'}
+      </p>
+      <div className="flex gap-2 flex-wrap justify-center">
+        {isAdmin && onAdmin && (
+          <button onClick={onAdmin} className="btn-ink">Ir al panel de control</button>
+        )}
+        <button onClick={onAdd} className={isAdmin ? 'btn-line' : 'btn-volt'}>
+          {isAdmin ? 'Añadir un jugador de prueba' : '+ Añadir mi primer jugador'}
+        </button>
+      </div>
     </div>
   )
 }

@@ -39,15 +39,27 @@ export default function AdminPanel() {
 
   return (
     <div className="animate-[fadeIn_.4s_ease]">
-      <header className="flex flex-col sm:flex-row items-start sm:items-end sm:justify-between gap-4 mb-6">
-        <div>
-          <div className="eyebrow mb-2">Administración</div>
-          <h1 className="h-page text-[26px] sm:text-[40px] leading-none">Superadmin</h1>
+      {/* Cabecera oscura: deja claro que esto no es la app de coach */}
+      <div className="bg-ink rounded-3xl p-7 sm:p-9 mb-6 relative overflow-hidden">
+        <div className="absolute -right-16 -top-16 w-56 h-56 rounded-full bg-volt/10 blur-3xl" />
+        <div className="relative flex flex-col sm:flex-row items-start sm:items-end sm:justify-between gap-4">
+          <div>
+            <div className="eyebrow text-paper/40 mb-2">Panel de control · CAMPO</div>
+            <h1 className="font-display font-bold text-paper text-[26px] sm:text-[38px] leading-none tracking-tightest">
+              Superadmin
+            </h1>
+            {stats && (
+              <p className="text-paper/50 text-[13px] mt-3">
+                {stats.totals.coaches} cuentas · {stats.totals.players} jugadores · {stats.totals.ai30} llamadas de IA este mes
+              </p>
+            )}
+          </div>
+          <button onClick={load} disabled={loading}
+                  className="bg-paper/10 hover:bg-paper/20 text-paper rounded-full px-5 py-2.5 text-[13px] font-medium transition shrink-0">
+            {loading ? 'Cargando…' : 'Actualizar'}
+          </button>
         </div>
-        <button onClick={load} disabled={loading} className="btn-line">
-          {loading ? 'Cargando…' : 'Actualizar'}
-        </button>
-      </header>
+      </div>
 
       {error && <div className="card-line px-4 py-3 mb-5 text-[13px] text-ink">⚠ {error}</div>}
 
@@ -107,6 +119,9 @@ function Resumen({ stats, users }: { stats: AdminStats; users: AdminUser[] }) {
         <Kpi v={t.ai30} l="Llamadas IA · 30 días" sub={t.aiFail ? `${t.aiFail} fallidas en total` : 'sin fallos'} />
       </div>
 
+      {/* Cosas que requieren tu atención */}
+      <Atencion stats={stats} users={users} />
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="card p-7">
           <div className="eyebrow mb-5">Altas por semana</div>
@@ -139,6 +154,56 @@ function Resumen({ stats, users }: { stats: AdminStats; users: AdminUser[] }) {
         </div>
       </div>
     </>
+  )
+}
+
+function Atencion({ stats, users }: { stats: AdminStats; users: AdminUser[] }) {
+  const avisos: { txt: string; grave?: boolean }[] = []
+
+  const sinConfirmar = users.filter(u => !u.email_confirmed)
+  if (sinConfirmar.length) avisos.push({
+    txt: `${sinConfirmar.length} ${sinConfirmar.length === 1 ? 'cuenta' : 'cuentas'} sin confirmar el correo. Es la causa más común de "no puedo entrar": puedes confirmarlas a mano desde Usuarios.`,
+  })
+
+  if (stats.totals.suspended) avisos.push({
+    txt: `${stats.totals.suspended} ${stats.totals.suspended === 1 ? 'cuenta suspendida' : 'cuentas suspendidas'}.`,
+  })
+
+  if (stats.totals.errors30) avisos.push({
+    txt: `${stats.totals.errors30} errores registrados en los últimos 30 días.`, grave: true,
+  })
+
+  const ratioFallo = stats.usage.length ? stats.usage.filter(r => !r.ok).length / stats.usage.length : 0
+  if (ratioFallo > 0.1) avisos.push({
+    txt: `${Math.round(ratioFallo * 100)}% de las llamadas a la IA están fallando. Revisa la Edge Function.`, grave: true,
+  })
+
+  const dormidas = users.filter(u =>
+    u.players > 0 && u.last_sign_in_at &&
+    Date.now() - new Date(u.last_sign_in_at).getTime() > 30 * 864e5)
+  if (dormidas.length) avisos.push({
+    txt: `${dormidas.length} ${dormidas.length === 1 ? 'cuenta lleva' : 'cuentas llevan'} más de un mes sin entrar teniendo jugadores.`,
+  })
+
+  if (!avisos.length) return (
+    <div className="card p-6 mb-6 flex items-center gap-3">
+      <span className="w-2 h-2 rounded-full bg-volt shrink-0" />
+      <span className="text-[14px] text-ink">Todo en orden. Nada que requiera tu atención.</span>
+    </div>
+  )
+
+  return (
+    <div className="card p-6 mb-6">
+      <div className="eyebrow mb-4">Requiere tu atención</div>
+      <div className="space-y-2.5">
+        {avisos.map((a, i) => (
+          <div key={i} className="flex items-start gap-3">
+            <span className={`w-1.5 h-1.5 rounded-full shrink-0 mt-2 ${a.grave ? 'bg-ink' : 'bg-line-strong'}`} />
+            <span className="text-[14px] text-sub leading-relaxed">{a.txt}</span>
+          </div>
+        ))}
+      </div>
+    </div>
   )
 }
 

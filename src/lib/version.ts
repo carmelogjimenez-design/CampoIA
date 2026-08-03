@@ -5,8 +5,8 @@
 // vieja que sigue cacheada. Sube el número en cada entrega.
 // ════════════════════════════════════════════════════════════
 
-export const VERSION = '2.6.0'
-export const BUILD_DATE = '2026-07-29'
+export const VERSION = '2.6.2'
+export const BUILD_DATE = '2026-08-03'
 
 /** "v2.4.0 · 29 jul" — corto, para pies de página. */
 export const versionLabel = (() => {
