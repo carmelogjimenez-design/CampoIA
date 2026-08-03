@@ -1,39 +1,30 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
-  AdminUser, AdminStats, AdminPlayer, CoachDetail,
-  listUsers, getStats, listPlayers, getCoachDetail,
+  AdminUser, AdminStats, AdminPlayer, CoachDetail, HealthCheck, AdminRow,
+  listUsers, getStats, listPlayers, getCoachDetail, getHealth,
+  listAdmins, addAdmin, removeAdmin,
   suspendUser, activateUser, resetPassword, confirmEmail, deleteUser,
 } from '../lib/admin'
 import { posLabel } from '../lib/positions'
-import { initials } from '../lib/players'
+import AdminLayout, { AdminSection, buildNav } from './admin/AdminLayout'
 import Modal from './Modal'
+import {
+  Panel, Eyebrow, PageTitle, Metric, Chip, Bar, SearchInput, Filters, Empty, Btn,
+  Thead, TableShell, Row, Cell, Num, Avatar, Field, Alert,
+  fecha, fechaHora, hace,
+} from './admin/ui'
 
-type Tab = 'resumen' | 'coaches' | 'jugadores' | 'ia' | 'errores' | 'registro'
-
-const TABS: [Tab, string][] = [
-  ['resumen', 'Resumen'], ['coaches', 'Coaches'], ['jugadores', 'Jugadores'],
-  ['ia', 'Consumo IA'], ['errores', 'Errores'], ['registro', 'Registro'],
-]
-
-const fecha = (s: string | null) => s
-  ? new Date(s).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: '2-digit' })
-  : '—'
-const fechaHora = (s: string) =>
-  new Date(s).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
-
-/** "hace 3 días" — más útil que una fecha para ver quién está vivo. */
-function hace(s: string | null): string {
-  if (!s) return 'nunca'
-  const d = Math.floor((Date.now() - new Date(s).getTime()) / 864e5)
-  if (d === 0) return 'hoy'
-  if (d === 1) return 'ayer'
-  if (d < 30) return `hace ${d} días`
-  if (d < 365) return `hace ${Math.floor(d / 30)} meses`
-  return `hace ${Math.floor(d / 365)} años`
+interface Props {
+  email: string
+  hasCoachData: boolean
+  onExit: () => void
+  onSignOut: () => void
 }
 
-export default function AdminPanel() {
-  const [tab, setTab] = useState<Tab>('resumen')
+export default function AdminPanel({ email, hasCoachData, onExit, onSignOut }: Props) {
+  const [section, setSection] = useState<AdminSection>('resumen')
+  const [menuOpen, setMenuOpen] = useState(false)
+
   const [users, setUsers] = useState<AdminUser[]>([])
   const [players, setPlayers] = useState<AdminPlayer[]>([])
   const [stats, setStats] = useState<AdminStats | null>(null)
@@ -51,66 +42,94 @@ export default function AdminPanel() {
   }
   useEffect(() => { load() }, [])
 
+  const avisos = useMemo(() => stats ? contarAvisos(stats, users, players).length : 0, [stats, users, players])
+
+  const nav = buildNav({
+    coaches: users.length,
+    jugadores: players.length,
+    errores: stats?.totals.errors30 ?? 0,
+    avisos,
+  })
+
   return (
-    <div className="animate-[fadeIn_.4s_ease]">
-      <div className="bg-ink rounded-3xl p-7 sm:p-9 mb-6 relative overflow-hidden">
-        <div className="absolute -right-16 -top-16 w-56 h-56 rounded-full bg-volt/10 blur-3xl" />
-        <div className="relative flex flex-col sm:flex-row items-start sm:items-end sm:justify-between gap-4">
-          <div>
-            <div className="eyebrow text-paper/40 mb-2">Panel de control · CAMPO</div>
-            <h1 className="font-display font-bold text-paper text-[26px] sm:text-[38px] leading-none tracking-tightest">
-              Superadmin
-            </h1>
-            {stats && (
-              <p className="text-paper/50 text-[13px] mt-3">
-                {stats.totals.coaches} cuentas · {players.length} jugadores · {stats.totals.ai30} llamadas de IA este mes
-              </p>
-            )}
-          </div>
-          <button onClick={load} disabled={loading}
-                  className="bg-paper/10 hover:bg-paper/20 text-paper rounded-full px-5 py-2.5 text-[13px] font-medium transition shrink-0">
-            {loading ? 'Cargando…' : 'Actualizar'}
-          </button>
-        </div>
-      </div>
+    <AdminLayout section={section} onSection={setSection} nav={nav} email={email}
+                 onExit={hasCoachData ? onExit : undefined} onSignOut={onSignOut}
+                 menuOpen={menuOpen} setMenuOpen={setMenuOpen}>
 
-      {error && <div className="card-line px-4 py-3 mb-5 text-[13px] text-ink">⚠ {error}</div>}
-
-      <div className="flex gap-1.5 mb-7 overflow-x-auto pb-1">
-        {TABS.map(([id, label]) => (
-          <button key={id} onClick={() => setTab(id)}
-                  className={`shrink-0 px-4 py-2 rounded-full text-[13px] font-medium transition ${
-                    tab === id ? 'bg-ink text-paper' : 'bg-paper text-sub border border-line hover:border-line-strong'}`}>
-            {label}
-            {id === 'coaches' && users.length ? ` · ${users.length}` : ''}
-            {id === 'jugadores' && players.length ? ` · ${players.length}` : ''}
-            {id === 'errores' && stats?.totals.errors30 ? ` · ${stats.totals.errors30}` : ''}
-          </button>
-        ))}
-      </div>
-
+      {error && <div className="mb-6"><Alert tone="danger">⚠ {error}</Alert></div>}
       {loading && !stats && <p className="text-muted text-[15px]">Cargando…</p>}
 
-      {tab === 'resumen' && stats && <Resumen stats={stats} users={users} players={players} onGo={setTab} />}
-      {tab === 'coaches' && <Coaches users={users} players={players} onPick={setCoachId} />}
-      {tab === 'jugadores' && <Jugadores players={players} onPickCoach={setCoachId} />}
-      {tab === 'ia' && stats && <ConsumoIA stats={stats} users={users} />}
-      {tab === 'errores' && stats && <Errores stats={stats} users={users} />}
-      {tab === 'registro' && stats && <Registro stats={stats} />}
+      {section === 'resumen' && stats && (
+        <Resumen stats={stats} users={users} players={players} onGo={setSection} onReload={load} loading={loading} />
+      )}
+      {section === 'coaches' && <Coaches users={users} players={players} onPick={setCoachId} />}
+      {section === 'jugadores' && <Jugadores players={players} onPickCoach={setCoachId} />}
+      {section === 'ia' && stats && <ConsumoIA stats={stats} users={users} />}
+      {section === 'salud' && <Salud />}
+      {section === 'errores' && stats && <Errores stats={stats} users={users} />}
+      {section === 'admins' && <Administradores meEmail={email} />}
+      {section === 'registro' && stats && <Registro stats={stats} />}
 
       {coachId && <CoachModal userId={coachId} onClose={() => setCoachId(null)} onChanged={load} />}
-    </div>
+    </AdminLayout>
   )
+}
+
+// ════════════════════════════════════════════════════════════
+// AVISOS — la lógica compartida entre el resumen y el contador
+// ════════════════════════════════════════════════════════════
+
+interface Aviso { txt: string; grave?: boolean; ir?: AdminSection }
+
+function contarAvisos(stats: AdminStats, users: AdminUser[], players: AdminPlayer[]): Aviso[] {
+  const a: Aviso[] = []
+
+  const sinConfirmar = users.filter(u => !u.email_confirmed)
+  if (sinConfirmar.length) a.push({
+    txt: `${sinConfirmar.length} ${sinConfirmar.length === 1 ? 'cuenta' : 'cuentas'} sin confirmar el correo. Es la causa más común de "no puedo entrar": puedes confirmarlas a mano.`,
+    ir: 'coaches',
+  })
+  if (stats.totals.suspended) a.push({
+    txt: `${stats.totals.suspended} ${stats.totals.suspended === 1 ? 'cuenta suspendida' : 'cuentas suspendidas'}.`,
+    ir: 'coaches',
+  })
+  if (stats.totals.errors30) a.push({
+    txt: `${stats.totals.errors30} errores registrados en los últimos 30 días.`, grave: true, ir: 'errores',
+  })
+  const ratio = stats.usage.length ? stats.usage.filter(r => !r.ok).length / stats.usage.length : 0
+  if (ratio > 0.1) a.push({
+    txt: `${Math.round(ratio * 100)}% de las llamadas a la IA están fallando. Revisa la Edge Function.`,
+    grave: true, ir: 'ia',
+  })
+  const dormidas = users.filter(u =>
+    u.players > 0 && u.last_sign_in_at && Date.now() - new Date(u.last_sign_in_at).getTime() > 30 * 864e5)
+  if (dormidas.length) a.push({
+    txt: `${dormidas.length} ${dormidas.length === 1 ? 'cuenta lleva' : 'cuentas llevan'} más de un mes sin entrar teniendo jugadores.`,
+    ir: 'coaches',
+  })
+  const huerfanos = players.filter(p => !p.coach_email)
+  if (huerfanos.length) a.push({
+    txt: `${huerfanos.length} jugadores sin coach asignado. Puede que se borrara una cuenta y quedaran sueltos.`,
+    grave: true, ir: 'jugadores',
+  })
+  const vacios = players.filter(p => p.matches + p.sessions === 0)
+  if (vacios.length > players.length * 0.4 && players.length > 3) a.push({
+    txt: `${vacios.length} de ${players.length} jugadores no tienen ni un partido ni una sesión. Puede indicar que la gente se atasca al empezar.`,
+    ir: 'jugadores',
+  })
+  return a
 }
 
 // ════════════════════════════════════════════════════════════
 // RESUMEN
 // ════════════════════════════════════════════════════════════
 
-function Resumen({ stats, users, players, onGo }: {
-  stats: AdminStats; users: AdminUser[]; players: AdminPlayer[]; onGo: (t: Tab) => void
+function Resumen({ stats, users, players, onGo, onReload, loading }: {
+  stats: AdminStats; users: AdminUser[]; players: AdminPlayer[]
+  onGo: (s: AdminSection) => void; onReload: () => void; loading: boolean
 }) {
   const t = stats.totals
+  const avisos = contarAvisos(stats, users, players)
   const activos30 = users.filter(u =>
     u.last_sign_in_at && Date.now() - new Date(u.last_sign_in_at).getTime() < 30 * 864e5).length
   const vinculados = players.filter(p => p.linked).length
@@ -120,122 +139,124 @@ function Resumen({ stats, users, players, onGo }: {
     for (const iso of stats.signups) {
       const d = new Date(iso)
       d.setDate(d.getDate() - ((d.getDay() + 6) % 7))
-      map.set(d.toISOString().slice(0, 10), (map.get(d.toISOString().slice(0, 10)) ?? 0) + 1)
+      const k = d.toISOString().slice(0, 10)
+      map.set(k, (map.get(k) ?? 0) + 1)
     }
-    return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0])).slice(-10)
+    return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0])).slice(-12)
   }, [stats.signups])
   const maxAltas = Math.max(...semanas.map(s => s[1]), 1)
 
+  // Actividad de IA por día, últimos 14
+  const porDia = useMemo(() => {
+    const map = new Map<string, number>()
+    for (let i = 13; i >= 0; i--) {
+      const d = new Date(); d.setDate(d.getDate() - i)
+      map.set(d.toISOString().slice(0, 10), 0)
+    }
+    for (const u of stats.usage) {
+      const k = u.created_at.slice(0, 10)
+      if (map.has(k)) map.set(k, map.get(k)! + 1)
+    }
+    return Array.from(map.entries())
+  }, [stats.usage])
+  const maxDia = Math.max(...porDia.map(d => d[1]), 1)
+
   return (
     <>
+      <header className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-7">
+        <div>
+          <div className="eyebrow mb-2">Administración</div>
+          <h1 className="h-page text-[26px] sm:text-[38px] leading-none">Resumen</h1>
+        </div>
+        <Btn onClick={onReload} disabled={loading}>{loading ? 'Cargando…' : 'Actualizar'}</Btn>
+      </header>
+
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <Kpi v={t.coaches} l="Cuentas" sub={t.suspended ? `${t.suspended} suspendidas` : 'todas activas'} onClick={() => onGo('coaches')} />
-        <Kpi v={activos30} l="Activos 30 días" sub={t.coaches ? `${Math.round(activos30 / t.coaches * 100)}% del total` : ''} />
-        <Kpi v={players.length} l="Jugadores" sub={`${vinculados} con acceso propio`} onClick={() => onGo('jugadores')} />
-        <Kpi v={t.ai30} l="Llamadas IA · 30 días" sub={t.aiFail ? `${t.aiFail} fallidas` : 'sin fallos'} onClick={() => onGo('ia')} />
+        <Metric v={t.coaches} l="Cuentas" sub={t.suspended ? `${t.suspended} suspendidas` : 'todas activas'} onClick={() => onGo('coaches')} />
+        <Metric v={activos30} l="Activos · 30 días" sub={t.coaches ? `${Math.round(activos30 / t.coaches * 100)}% del total` : ''}
+                tone={t.coaches && activos30 / t.coaches > 0.6 ? 'volt' : undefined} />
+        <Metric v={players.length} l="Jugadores" sub={`${vinculados} con portal propio`} onClick={() => onGo('jugadores')} />
+        <Metric v={t.ai30} l="Llamadas de IA · 30 días" sub={t.aiFail ? `${t.aiFail} fallidas` : 'sin fallos'}
+                tone={t.aiFail ? 'warn' : undefined} onClick={() => onGo('ia')} />
       </div>
 
-      <Atencion stats={stats} users={users} players={players} />
+      <Panel className="mb-6">
+        <Eyebrow>{avisos.length ? 'Requiere tu atención' : 'Estado'}</Eyebrow>
+        {!avisos.length ? (
+          <div className="flex items-center gap-3 mt-4">
+            <span className="w-2 h-2 rounded-full bg-volt shrink-0" />
+            <span className="text-[14px] text-sub">Todo en orden. Nada que requiera tu atención.</span>
+          </div>
+        ) : (
+          <div className="space-y-2.5 mt-4">
+            {avisos.map((a, i) => (
+              <button key={i} onClick={() => a.ir && onGo(a.ir)}
+                      className="flex items-start gap-3 text-left w-full group">
+                <span className={`w-1.5 h-1.5 rounded-full shrink-0 mt-2 ${a.grave ? 'bg-ink' : 'bg-line-strong'}`} />
+                <span className="text-[14px] text-sub leading-relaxed group-hover:text-ink transition">{a.txt}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </Panel>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="card p-7">
-          <div className="eyebrow mb-5">Altas por semana</div>
-          {semanas.length === 0 ? <p className="text-muted text-[14px]">Sin datos.</p> : (
-            <div className="flex items-end gap-1.5 h-32">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <Panel>
+          <Eyebrow>Altas por semana</Eyebrow>
+          {semanas.length === 0 ? <p className="text-muted text-[14px] mt-4">Sin datos.</p> : (
+            <div className="flex items-end gap-1.5 h-32 mt-6">
               {semanas.map(([k, n]) => (
                 <div key={k} className="flex-1 flex flex-col items-center gap-2" title={`${k}: ${n}`}>
-                  <div className="w-full bg-ink rounded-t-md" style={{ height: `${(n / maxAltas) * 100}%`, minHeight: 4 }} />
-                  <span className="text-[10px] text-faint tnum">{k.slice(8, 10)}/{k.slice(5, 7)}</span>
+                  <div className="w-full bg-ink/25 hover:bg-volt rounded-t transition-colors"
+                       style={{ height: `${(n / maxAltas) * 100}%`, minHeight: 3 }} />
+                  <span className="text-[9px] text-faint tabular-nums">{k.slice(8, 10)}/{k.slice(5, 7)}</span>
                 </div>
               ))}
             </div>
           )}
-        </div>
+        </Panel>
 
-        <div className="card p-7">
-          <div className="eyebrow mb-5">Uso de la plataforma</div>
-          <div className="space-y-4">
-            {([
-              ['Jugadores por cuenta', t.coaches ? (players.length / t.coaches).toFixed(1) : '0'],
-              ['Partidos registrados', String(t.matches)],
-              ['Sesiones creadas', String(t.sessions)],
-              ['Jugadores con portal', `${vinculados} de ${players.length}`],
-            ] as [string, string][]).map(([l, v]) => (
-              <div key={l} className="flex items-baseline justify-between">
-                <span className="text-[14px] text-sub">{l}</span>
-                <span className="stat-num text-[20px]">{v}</span>
+        <Panel>
+          <Eyebrow>Actividad de IA · 14 días</Eyebrow>
+          <div className="flex items-end gap-1 h-32 mt-6">
+            {porDia.map(([k, n]) => (
+              <div key={k} className="flex-1 flex flex-col items-center gap-2" title={`${k}: ${n} llamadas`}>
+                <div className={`w-full rounded-t transition-colors ${n ? 'bg-volt' : 'bg-line'}`}
+                     style={{ height: `${Math.max(3, (n / maxDia) * 100)}%` }} />
               </div>
             ))}
           </div>
+          <p className="text-[11px] text-faint mt-3">
+            {stats.usage.length ? `${stats.usage.length} llamadas en 30 días` : 'Sin llamadas registradas todavía'}
+          </p>
+        </Panel>
+      </div>
+
+      <Panel>
+        <Eyebrow>Uso de la plataforma</Eyebrow>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mt-5">
+          {([
+            ['Jugadores por cuenta', t.coaches ? (players.length / t.coaches).toFixed(1) : '0'],
+            ['Partidos registrados', String(t.matches)],
+            ['Sesiones creadas', String(t.sessions)],
+            ['Adopción del portal', players.length ? `${Math.round(vinculados / players.length * 100)}%` : '—'],
+          ] as [string, string][]).map(([l, v]) => (
+            <div key={l}>
+              <div className="font-display font-bold text-[24px] text-ink tabular-nums leading-none">{v}</div>
+              <div className="text-[12px] text-muted mt-2">{l}</div>
+            </div>
+          ))}
         </div>
-      </div>
+      </Panel>
     </>
-  )
-}
-
-function Atencion({ stats, users, players }: { stats: AdminStats; users: AdminUser[]; players: AdminPlayer[] }) {
-  const avisos: { txt: string; grave?: boolean }[] = []
-
-  const sinConfirmar = users.filter(u => !u.email_confirmed)
-  if (sinConfirmar.length) avisos.push({
-    txt: `${sinConfirmar.length} ${sinConfirmar.length === 1 ? 'cuenta' : 'cuentas'} sin confirmar el correo. Es la causa más común de "no puedo entrar": desde Coaches puedes confirmarlas a mano.`,
-  })
-  if (stats.totals.suspended) avisos.push({
-    txt: `${stats.totals.suspended} ${stats.totals.suspended === 1 ? 'cuenta suspendida' : 'cuentas suspendidas'}.`,
-  })
-  if (stats.totals.errors30) avisos.push({
-    txt: `${stats.totals.errors30} errores registrados en los últimos 30 días.`, grave: true,
-  })
-  const ratioFallo = stats.usage.length ? stats.usage.filter(r => !r.ok).length / stats.usage.length : 0
-  if (ratioFallo > 0.1) avisos.push({
-    txt: `${Math.round(ratioFallo * 100)}% de las llamadas a la IA están fallando. Revisa la Edge Function.`, grave: true,
-  })
-  const dormidas = users.filter(u =>
-    u.players > 0 && u.last_sign_in_at && Date.now() - new Date(u.last_sign_in_at).getTime() > 30 * 864e5)
-  if (dormidas.length) avisos.push({
-    txt: `${dormidas.length} ${dormidas.length === 1 ? 'cuenta lleva' : 'cuentas llevan'} más de un mes sin entrar teniendo jugadores.`,
-  })
-  const huerfanos = players.filter(p => !p.coach_email)
-  if (huerfanos.length) avisos.push({
-    txt: `${huerfanos.length} jugadores sin coach asignado. Puede que se borrara la cuenta y quedaran sueltos.`, grave: true,
-  })
-
-  if (!avisos.length) return (
-    <div className="card p-6 mb-6 flex items-center gap-3">
-      <span className="w-2 h-2 rounded-full bg-volt shrink-0" />
-      <span className="text-[14px] text-ink">Todo en orden. Nada que requiera tu atención.</span>
-    </div>
-  )
-
-  return (
-    <div className="card p-6 mb-6">
-      <div className="eyebrow mb-4">Requiere tu atención</div>
-      <div className="space-y-2.5">
-        {avisos.map((a, i) => (
-          <div key={i} className="flex items-start gap-3">
-            <span className={`w-1.5 h-1.5 rounded-full shrink-0 mt-2 ${a.grave ? 'bg-ink' : 'bg-line-strong'}`} />
-            <span className="text-[14px] text-sub leading-relaxed">{a.txt}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-function Kpi({ v, l, sub, onClick }: { v: number | string; l: string; sub?: string; onClick?: () => void }) {
-  const Tag = onClick ? 'button' : 'div'
-  return (
-    <Tag onClick={onClick} className={`card p-6 text-left ${onClick ? 'hover:border-line-strong transition cursor-pointer' : ''}`}>
-      <div className="stat-num text-[34px] leading-none">{v}</div>
-      <div className="text-[12px] text-muted mt-1.5">{l}</div>
-      {sub && <div className="text-[11px] text-faint mt-1">{sub}</div>}
-    </Tag>
   )
 }
 
 // ════════════════════════════════════════════════════════════
 // COACHES
 // ════════════════════════════════════════════════════════════
+
+const COLS_COACH = '2fr 1fr .7fr .7fr .7fr 1fr'
 
 function Coaches({ users, players, onPick }: {
   users: AdminUser[]; players: AdminPlayer[]; onPick: (id: string) => void
@@ -260,67 +281,56 @@ function Coaches({ users, players, onPick }: {
 
   return (
     <>
-      <div className="flex gap-2 mb-4 flex-wrap items-center">
-        <input className="field flex-1 min-w-[220px]" value={q} onChange={e => setQ(e.target.value)}
-               placeholder="Buscar por correo o nombre…" />
-        {([['todos', 'Todos'], ['activos', 'Activos'], ['suspendidos', 'Suspendidos'],
-           ['sin_confirmar', 'Sin confirmar'], ['dormidos', 'Inactivos +30d']] as const).map(([id, l]) => (
-          <button key={id} onClick={() => setFiltro(id)}
-                  className={filtro === id ? 'chip bg-ink text-paper' : 'chip'}>{l}</button>
-        ))}
+      <PageTitle title="Coaches" sub={`${users.length} cuentas registradas`} />
+
+      <div className="flex flex-col sm:flex-row gap-3 mb-5">
+        <div className="flex-1"><SearchInput value={q} onChange={setQ} placeholder="Buscar por correo o nombre…" /></div>
+        <Filters value={filtro} onChange={setFiltro} options={[
+          ['todos', 'Todos'], ['activos', 'Activos'], ['suspendidos', 'Suspendidos'],
+          ['sin_confirmar', 'Sin confirmar'], ['dormidos', 'Inactivos +30d'],
+        ]} />
       </div>
 
-      <div className="card overflow-hidden">
-        <div className="hidden md:grid grid-cols-[2fr_1fr_repeat(4,.75fr)] gap-4 px-6 py-3 border-b border-line bg-canvas/60">
-          {['Coach', 'Estado', 'Jugadores', 'Partidos', 'IA', 'Última conexión'].map(h =>
-            <div key={h} className="eyebrow">{h}</div>)}
-        </div>
-
+      <TableShell>
+        <Thead cols={COLS_COACH} labels={['Coach', 'Estado', 'Jugadores', 'Partidos', 'IA', 'Última conexión']} />
         {vistos.map(u => (
-          <button key={u.user_id} onClick={() => onPick(u.user_id)}
-                  className="w-full text-left grid grid-cols-2 md:grid-cols-[2fr_1fr_repeat(4,.75fr)] gap-4 px-5 md:px-6 py-4 border-b border-line last:border-0 hover:bg-canvas/50 transition">
-            <div className="col-span-2 md:col-span-1 flex items-center gap-3 min-w-0">
-              <span className="w-8 h-8 rounded-full bg-canvas flex items-center justify-center text-[10px] font-semibold text-sub shrink-0">
-                {initials(u.name ?? u.email ?? '?')}
-              </span>
-              <div className="min-w-0">
-                <div className="text-[14px] font-medium text-ink truncate">{u.name ?? '—'}</div>
-                <div className="text-[12px] text-muted truncate">{u.email}</div>
+          <Row key={u.user_id} cols={COLS_COACH} onClick={() => onPick(u.user_id)}>
+            <Cell span>
+              <div className="flex items-center gap-3 min-w-0">
+                <Avatar name={u.name ?? u.email ?? '?'} />
+                <div className="min-w-0">
+                  <div className="text-[14px] font-medium text-ink truncate">{u.name ?? '—'}</div>
+                  <div className="text-[12px] text-muted truncate">{u.email}</div>
+                </div>
               </div>
-            </div>
-            <div className="flex items-center gap-1.5 flex-wrap">
-              {u.status === 'suspended'
-                ? <span className="chip bg-ink text-paper">Suspendido</span>
-                : <span className="chip">{u.role === 'player' ? 'Jugador' : 'Coach'}</span>}
-              {!u.email_confirmed && <span className="chip" title="No ha confirmado el correo">✉</span>}
-            </div>
-            <Cell label="Jugadores" v={jugadoresDe(u.user_id)} />
-            <Cell label="Partidos" v={u.matches} />
-            <Cell label="IA" v={u.ai_calls} />
-            <div className="flex flex-col justify-center">
-              <span className="md:hidden text-[11px] text-muted">Última conexión</span>
+            </Cell>
+            <Cell label="Estado">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {u.status === 'suspended'
+                  ? <Chip tone="danger">Suspendido</Chip>
+                  : <Chip>{u.role === 'player' ? 'Jugador' : 'Coach'}</Chip>}
+                {!u.email_confirmed && <Chip tone="ghost" title="Correo sin confirmar">✉</Chip>}
+              </div>
+            </Cell>
+            <Cell label="Jugadores"><Num>{jugadoresDe(u.user_id)}</Num></Cell>
+            <Cell label="Partidos"><Num>{u.matches}</Num></Cell>
+            <Cell label="IA"><Num>{u.ai_calls}</Num></Cell>
+            <Cell label="Última conexión">
               <span className="text-[13px] text-sub">{hace(u.last_sign_in_at)}</span>
-            </div>
-          </button>
+            </Cell>
+          </Row>
         ))}
         {!vistos.length && <div className="p-12 text-center text-muted text-[14px]">Nada con estos filtros.</div>}
-      </div>
+      </TableShell>
     </>
-  )
-}
-
-function Cell({ label, v }: { label: string; v: number }) {
-  return (
-    <div className="flex flex-col justify-center">
-      <span className="md:hidden text-[11px] text-muted">{label}</span>
-      <span className="stat-num text-[16px]">{v}</span>
-    </div>
   )
 }
 
 // ════════════════════════════════════════════════════════════
 // JUGADORES
 // ════════════════════════════════════════════════════════════
+
+const COLS_PLAYER = '1.7fr 1.4fr .6fr .6fr .6fr .9fr'
 
 function Jugadores({ players, onPickCoach }: {
   players: AdminPlayer[]; onPickCoach: (id: string) => void
@@ -342,78 +352,62 @@ function Jugadores({ players, onPickCoach }: {
     if (filtro === 'inactivos' && p.matches + p.sessions > 0) return false
     if (!q.trim()) return true
     const t = q.toLowerCase()
-    return p.name.toLowerCase().includes(t)
-      || (p.club ?? '').toLowerCase().includes(t)
+    return p.name.toLowerCase().includes(t) || (p.club ?? '').toLowerCase().includes(t)
       || (p.coach_email ?? '').toLowerCase().includes(t)
   })
 
   return (
     <>
-      <div className="flex gap-2 mb-3 flex-wrap items-center">
-        <input className="field flex-1 min-w-[220px]" value={q} onChange={e => setQ(e.target.value)}
-               placeholder="Buscar por jugador, club o coach…" />
-        {([['todos', 'Todos'], ['vinculados', 'Con portal'], ['sin_vincular', 'Sin portal'],
-           ['inactivos', 'Sin actividad']] as const).map(([id, l]) => (
-          <button key={id} onClick={() => setFiltro(id)}
-                  className={filtro === id ? 'chip bg-ink text-paper' : 'chip'}>{l}</button>
-        ))}
+      <PageTitle title="Jugadores" sub={`${players.length} en toda la plataforma · ${players.filter(p => p.linked).length} con portal propio`} />
+
+      <div className="flex flex-col sm:flex-row gap-3 mb-3">
+        <div className="flex-1"><SearchInput value={q} onChange={setQ} placeholder="Buscar por jugador, club o coach…" /></div>
+        <Filters value={filtro} onChange={setFiltro} options={[
+          ['todos', 'Todos'], ['vinculados', 'Con portal'], ['sin_vincular', 'Sin portal'], ['inactivos', 'Sin actividad'],
+        ]} />
       </div>
 
       {coaches.length > 1 && (
-        <div className="flex gap-1.5 mb-4 flex-wrap items-center">
-          <span className="eyebrow mr-1">Coach</span>
-          <button onClick={() => setCoach('all')} className={coach === 'all' ? 'chip bg-ink text-paper' : 'chip'}>Todos</button>
-          {coaches.map(([id, email]) => (
-            <button key={id} onClick={() => setCoach(id)}
-                    className={coach === id ? 'chip bg-ink text-paper' : 'chip'}>{email.split('@')[0]}</button>
-          ))}
+        <div className="flex gap-1.5 flex-wrap items-center mb-5">
+          <span className="text-[10px] font-semibold text-faint tracking-[0.14em] uppercase mr-1">Coach</span>
+          <Filters value={coach} onChange={setCoach}
+                   options={[['all', 'Todos'], ...coaches.map(([id, em]) => [id, em.split('@')[0]] as [string, string])]} />
         </div>
       )}
 
-      <div className="card overflow-hidden">
-        <div className="hidden md:grid grid-cols-[1.7fr_1.5fr_repeat(4,.7fr)] gap-4 px-6 py-3 border-b border-line bg-canvas/60">
-          {['Jugador', 'Coach', 'Partidos', 'Sesiones', 'Portal', 'Último check-in'].map(h =>
-            <div key={h} className="eyebrow">{h}</div>)}
-        </div>
-
+      <TableShell>
+        <Thead cols={COLS_PLAYER} labels={['Jugador', 'Coach', 'Partidos', 'Sesiones', 'Portal', 'Último check-in']} />
         {vistos.map(p => (
-          <div key={p.id} className="grid grid-cols-2 md:grid-cols-[1.7fr_1.5fr_repeat(4,.7fr)] gap-4 px-5 md:px-6 py-4 border-b border-line last:border-0">
-            <div className="col-span-2 md:col-span-1 flex items-center gap-3 min-w-0">
-              <span className="w-9 h-9 rounded-full bg-canvas flex items-center justify-center text-[10px] font-semibold text-sub shrink-0 overflow-hidden">
-                {p.photo_url ? <img src={p.photo_url} className="w-full h-full object-cover" /> : initials(p.name)}
-              </span>
-              <div className="min-w-0">
-                <div className="text-[14px] font-medium text-ink truncate">{p.name}</div>
-                <div className="text-[12px] text-muted truncate">
-                  {posLabel(p.pos, p.pos_group)}{p.age ? ` · ${p.age} años` : ''}{p.club ? ` · ${p.club}` : ''}
+          <Row key={p.id} cols={COLS_PLAYER}>
+            <Cell span>
+              <div className="flex items-center gap-3 min-w-0">
+                <Avatar url={p.photo_url} name={p.name} size={36} />
+                <div className="min-w-0">
+                  <div className="text-[14px] font-medium text-ink truncate">{p.name}</div>
+                  <div className="text-[12px] text-muted truncate">
+                    {posLabel(p.pos, p.pos_group)}{p.age ? ` · ${p.age} años` : ''}{p.club ? ` · ${p.club}` : ''}
+                  </div>
                 </div>
               </div>
-            </div>
-
-            <div className="flex items-center min-w-0">
+            </Cell>
+            <Cell label="Coach">
               {p.coach_email ? (
                 <button onClick={() => onPickCoach(p.coach_id)}
                         className="text-[13px] text-sub hover:text-ink transition truncate text-left">
                   {p.coach_email}
                 </button>
-              ) : <span className="chip bg-ink text-paper">Sin coach</span>}
-            </div>
-
-            <Cell label="Partidos" v={p.matches} />
-            <Cell label="Sesiones" v={p.sessions} />
-            <div className="flex items-center">
-              {p.linked
-                ? <span className="chip bg-volt text-ink">Sí</span>
-                : <span className="chip">No</span>}
-            </div>
-            <div className="flex flex-col justify-center">
-              <span className="md:hidden text-[11px] text-muted">Último check-in</span>
+              ) : <Chip tone="danger">Sin coach</Chip>}
+            </Cell>
+            <Cell label="Partidos"><Num>{p.matches}</Num></Cell>
+            <Cell label="Sesiones"><Num>{p.sessions}</Num></Cell>
+            <Cell label="Portal">{p.linked ? <Chip tone="volt">Sí</Chip> : <Chip tone="ghost">No</Chip>}</Cell>
+            <Cell label="Último check-in">
               <span className="text-[13px] text-sub">{hace(p.last_checkin)}</span>
-            </div>
-          </div>
+            </Cell>
+          </Row>
         ))}
         {!vistos.length && <div className="p-12 text-center text-muted text-[14px]">Nada con estos filtros.</div>}
-      </div>
+      </TableShell>
     </>
   )
 }
@@ -434,9 +428,7 @@ function CoachModal({ userId, onClose, onChanged }: {
   const [confirmMail, setConfirmMail] = useState('')
   const [razon, setRazon] = useState('')
 
-  useEffect(() => {
-    getCoachDetail(userId).then(setD).catch(e => setError(e.message))
-  }, [userId])
+  useEffect(() => { getCoachDetail(userId).then(setD).catch(e => setError(e.message)) }, [userId])
 
   async function run(tag: string, fn: () => Promise<unknown>, ok: string) {
     setBusy(tag); setError(''); setMsg('')
@@ -447,7 +439,7 @@ function CoachModal({ userId, onClose, onChanged }: {
 
   if (!d) return (
     <Modal title="Cargando…" onClose={onClose}>
-      {error ? <p className="text-[13px] text-ink">⚠ {error}</p> : <p className="text-muted text-[14px]">Un momento…</p>}
+      {error ? <Alert tone="danger">⚠ {error}</Alert> : <p className="text-muted text-[14px]">Un momento…</p>}
     </Modal>
   )
 
@@ -455,54 +447,52 @@ function CoachModal({ userId, onClose, onChanged }: {
   const email = p?.email ?? ''
   const iaMes = d.usage.filter(u => Date.now() - new Date(u.created_at).getTime() < 30 * 864e5)
   const chars = d.usage.reduce((a, u) => a + (u.prompt_chars ?? 0) + (u.output_chars ?? 0), 0)
-  const sesionesHechas = d.sessions.filter(s => s.completed).length
+  const hechas = d.sessions.filter(s => s.completed).length
 
   return (
     <Modal title={p?.name ?? email ?? 'Coach'} onClose={onClose} wide>
-      {error && <div className="card-line px-4 py-2.5 mb-4 text-[13px] text-ink">⚠ {error}</div>}
-      {msg && <div className="bg-volt/20 border border-volt rounded-xl px-4 py-2.5 mb-4 text-[13px] text-ink">✓ {msg}</div>}
+      {error && <div className="mb-4"><Alert tone="danger">⚠ {error}</Alert></div>}
+      {msg && <div className="mb-4"><Alert tone="ok">✓ {msg}</Alert></div>}
 
       <div className="flex items-center gap-2 mb-5 flex-wrap">
         <span className="text-[13px] text-sub">{email}</span>
-        {p?.status === 'suspended' && <span className="chip bg-ink text-paper">Suspendido</span>}
-        {!d.auth.email_confirmed && <span className="chip">Correo sin confirmar</span>}
+        {p?.status === 'suspended' && <Chip tone="danger">Suspendido</Chip>}
+        {!d.auth.email_confirmed && <Chip tone="ghost">Correo sin confirmar</Chip>}
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
         {([['Jugadores', d.players.length], ['Partidos', p?.matches ?? 0],
-           ['Sesiones', `${sesionesHechas}/${d.sessions.length}`], ['Llamadas IA', d.usage.length]] as [string, string | number][])
+           ['Sesiones', `${hechas}/${d.sessions.length}`], ['Llamadas IA', d.usage.length]] as [string, string | number][])
           .map(([l, v]) => (
             <div key={l} className="bg-canvas rounded-xl p-3.5">
-              <div className="stat-num text-[20px] leading-none">{v}</div>
-              <div className="text-[11px] text-muted mt-1">{l}</div>
+              <div className="font-display font-bold text-[20px] text-ink tabular-nums leading-none">{v}</div>
+              <div className="text-[11px] text-muted mt-1.5">{l}</div>
             </div>
           ))}
       </div>
 
-      <div className="card-line p-4 mb-5">
+      <div className="bg-canvas border border-line rounded-xl p-4 mb-5">
         <div className="grid grid-cols-2 gap-y-2 text-[13px]">
-          <Row l="Alta" v={fecha(d.auth.created_at)} />
-          <Row l="Última conexión" v={hace(d.auth.last_sign_in_at)} />
-          <Row l="IA este mes" v={String(iaMes.length)} />
-          <Row l="Tokens consumidos" v={`≈ ${Math.round(chars / 3500)}k`} />
-          <Row l="Último partido" v={d.lastMatch ? fecha(d.lastMatch) : '—'} />
-          <Row l="Rol" v={p?.role === 'player' ? 'Jugador' : 'Coach'} />
+          <Field l="Alta" v={fecha(d.auth.created_at)} />
+          <Field l="Última conexión" v={hace(d.auth.last_sign_in_at)} />
+          <Field l="IA este mes" v={String(iaMes.length)} />
+          <Field l="Tokens consumidos" v={`≈ ${Math.round(chars / 3500)}k`} />
+          <Field l="Último partido" v={d.lastMatch ? fecha(d.lastMatch) : '—'} />
+          <Field l="Rol" v={p?.role === 'player' ? 'Jugador' : 'Coach'} />
         </div>
-        {p?.suspend_reason && <p className="text-[12px] text-muted mt-3">Motivo de la suspensión: {p.suspend_reason}</p>}
+        {p?.suspend_reason && <p className="text-[12px] text-muted mt-3">Motivo: {p.suspend_reason}</p>}
       </div>
 
       {d.players.length > 0 && (
         <div className="mb-5">
-          <div className="eyebrow mb-3">Sus jugadores</div>
-          <div className="space-y-1.5">
+          <Eyebrow>Sus jugadores</Eyebrow>
+          <div className="mt-3 space-y-1">
             {d.players.map(pl => (
               <div key={pl.id} className="flex items-center gap-3 py-2 border-b border-line last:border-0">
-                <span className="w-7 h-7 rounded-full bg-canvas flex items-center justify-center text-[9px] font-semibold text-sub shrink-0 overflow-hidden">
-                  {pl.photo_url ? <img src={pl.photo_url} className="w-full h-full object-cover" /> : initials(pl.name)}
-                </span>
+                <Avatar url={pl.photo_url} name={pl.name} size={28} />
                 <span className="text-[14px] text-ink flex-1 truncate">{pl.name}</span>
                 <span className="text-[12px] text-muted">{posLabel(pl.pos, pl.pos_group)}</span>
-                {pl.auth_user_id && <span className="chip bg-volt text-ink">portal</span>}
+                {pl.auth_user_id && <Chip tone="volt">portal</Chip>}
               </div>
             ))}
           </div>
@@ -510,75 +500,73 @@ function CoachModal({ userId, onClose, onChanged }: {
       )}
 
       {link && (
-        <div className="card-line p-4 mb-5">
-          <p className="text-[12px] text-sub mb-2">Enlace de recuperación (pásaselo si no le llega el correo):</p>
-          <p className="text-[11px] text-ink break-all font-mono bg-canvas rounded-lg p-2.5">{link}</p>
-          <button onClick={() => navigator.clipboard.writeText(link)} className="btn-line text-[12px] mt-2">Copiar</button>
+        <div className="mb-5">
+          <Alert>
+            <p className="mb-2">Enlace de recuperación (pásaselo si no le llega el correo):</p>
+            <p className="text-[11px] break-all font-mono bg-canvas rounded-lg p-2.5 text-sub">{link}</p>
+            <button onClick={() => navigator.clipboard.writeText(link)}
+                    className="text-[12px] underline mt-2 text-sub hover:text-ink">Copiar</button>
+          </Alert>
         </div>
       )}
 
       {!borrando ? (
         <>
           <div className="space-y-2 mb-5">
-            <button onClick={() => run('reset',
-                      async () => { const r = await resetPassword(userId, email); setLink(r.link) },
-                      'Enlace de recuperación generado.')}
-                    disabled={!!busy} className="btn-line w-full text-[14px]">
+            <Btn full onClick={() => run('reset',
+                   async () => { const r = await resetPassword(userId, email); setLink(r.link) },
+                   'Enlace de recuperación generado.')} disabled={!!busy}>
               {busy === 'reset' ? '…' : 'Restablecer contraseña'}
-            </button>
+            </Btn>
 
             {!d.auth.email_confirmed && (
-              <button onClick={() => run('confirm', () => confirmEmail(userId, email), 'Correo confirmado.')}
-                      disabled={!!busy} className="btn-line w-full text-[14px]">
+              <Btn full onClick={() => run('confirm', () => confirmEmail(userId, email), 'Correo confirmado.')} disabled={!!busy}>
                 {busy === 'confirm' ? '…' : 'Confirmar su correo a mano'}
-              </button>
+              </Btn>
             )}
 
             {p?.status === 'active' ? (
               <>
-                <input className="field text-[13px]" value={razon} onChange={e => setRazon(e.target.value)}
+                <input className="field text-[13px]"
+                       value={razon} onChange={e => setRazon(e.target.value)}
                        placeholder="Motivo de la suspensión (opcional)" />
-                <button onClick={() => run('susp', () => suspendUser(userId, email, razon), 'Cuenta suspendida.')}
-                        disabled={!!busy} className="btn-ink w-full text-[14px]">
+                <Btn full tone="ink" onClick={() => run('susp', () => suspendUser(userId, email, razon), 'Cuenta suspendida.')} disabled={!!busy}>
                   {busy === 'susp' ? '…' : 'Suspender cuenta'}
-                </button>
+                </Btn>
               </>
             ) : (
-              <button onClick={() => run('act', () => activateUser(userId, email), 'Cuenta reactivada.')}
-                      disabled={!!busy} className="btn-volt w-full text-[14px]">
+              <Btn full tone="volt" onClick={() => run('act', () => activateUser(userId, email), 'Cuenta reactivada.')} disabled={!!busy}>
                 {busy === 'act' ? '…' : 'Reactivar cuenta'}
-              </button>
+              </Btn>
             )}
           </div>
 
           <button onClick={() => setBorrando(true)}
-                  className="text-[13px] text-muted hover:text-ink transition">Eliminar cuenta y todos sus datos</button>
+                  className="text-[13px] text-faint hover:text-ink transition">
+            Eliminar cuenta y todos sus datos
+          </button>
         </>
       ) : (
-        <div className="card-line p-5">
+        <div className="border border-line-strong bg-ink/[0.07] rounded-xl p-5">
           <p className="text-[14px] text-ink font-medium mb-1.5">Esto no se puede deshacer</p>
           <p className="text-[13px] text-sub leading-relaxed mb-4">
             Se borran sus {d.players.length} jugadores, {p?.matches ?? 0} partidos, {d.sessions.length} sesiones
             y su cuenta. Si solo quieres bloquearle el acceso, suspende en vez de borrar.
           </p>
-          <label className="eyebrow block mb-2">Escribe «{email}» para confirmar</label>
-          <input className="field mb-4" value={confirmMail} onChange={e => setConfirmMail(e.target.value)} autoFocus />
+          <label className="block text-[11px] text-muted mb-2">Escribe «{email}» para confirmar</label>
+          <input className="field mb-4"
+                 value={confirmMail} onChange={e => setConfirmMail(e.target.value)} autoFocus />
           <div className="flex gap-2">
-            <button onClick={() => setBorrando(false)} className="btn-line flex-1">Cancelar</button>
-            <button onClick={() => run('del',
-                      async () => { await deleteUser(userId, email, confirmMail); onClose() }, 'Cuenta eliminada.')}
-                    disabled={busy === 'del' || confirmMail !== email} className="btn-ink flex-1">
+            <Btn full onClick={() => setBorrando(false)}>Cancelar</Btn>
+            <Btn full tone="danger" disabled={busy === 'del' || confirmMail !== email}
+                 onClick={() => run('del', async () => { await deleteUser(userId, email, confirmMail); onClose() }, 'Cuenta eliminada.')}>
               {busy === 'del' ? 'Eliminando…' : 'Eliminar'}
-            </button>
+            </Btn>
           </div>
         </div>
       )}
     </Modal>
   )
-}
-
-function Row({ l, v }: { l: string; v: string }) {
-  return <><span className="text-muted">{l}</span><span className="text-ink text-right">{v}</span></>
 }
 
 // ════════════════════════════════════════════════════════════
@@ -614,55 +602,196 @@ function ConsumoIA({ stats, users }: { stats: AdminStats; users: AdminUser[] }) 
 
   return (
     <>
+      <PageTitle title="Consumo de IA" sub="Últimos 30 días" />
+
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <Kpi v={u.length} l="Llamadas · 30 días" />
-        <Kpi v={Math.round(tokens / 1000)} l="Miles de tokens" sub={`≈ ${coste.toFixed(2)} $`} />
-        <Kpi v={msMedio} l="Milisegundos de media" />
-        <Kpi v={fallos} l="Fallidas" sub={u.length ? `${Math.round(fallos / u.length * 100)}%` : ''} />
+        <Metric v={u.length} l="Llamadas" />
+        <Metric v={Math.round(tokens / 1000)} l="Miles de tokens" sub={`≈ ${coste.toFixed(2)} $`} />
+        <Metric v={msMedio} l="Milisegundos de media" tone={msMedio > 8000 ? 'warn' : undefined} />
+        <Metric v={fallos} l="Fallidas" sub={u.length ? `${Math.round(fallos / u.length * 100)}%` : ''}
+                tone={fallos ? 'warn' : undefined} />
       </div>
 
-      {!u.length && (
-        <div className="card p-12 text-center">
-          <p className="text-ink text-[15px] font-medium mb-1.5">Todavía sin registros</p>
-          <p className="text-muted text-[13px] max-w-[380px] mx-auto leading-relaxed">
-            El consumo se mide desde que subiste la versión con el registro activado.
-            Las llamadas anteriores no quedaron guardadas.
-          </p>
-        </div>
-      )}
-
-      {u.length > 0 && (
+      {!u.length ? (
+        <Empty title="Todavía sin registros"
+               sub="El consumo se mide desde que subiste la versión con el registro activado. Las llamadas anteriores no quedaron guardadas." />
+      ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="card p-7">
-            <div className="eyebrow mb-5">Por cuenta</div>
-            {porCoach.slice(0, 10).map(([id, dd]) => (
-              <div key={id} className="flex items-center justify-between py-2.5 border-b border-line last:border-0">
-                <span className="text-[13px] text-ink truncate flex-1 mr-3">{nombre(id === 'null' ? null : id)}</span>
-                <span className="text-[12px] text-muted tnum mr-3">{Math.round(dd.chars / 3500)}k tok</span>
-                <span className="stat-num text-[15px]">{dd.n}</span>
-              </div>
-            ))}
-          </div>
-
-          <div className="card p-7">
-            <div className="eyebrow mb-5">Por función</div>
-            {porModo.map(([modo, n]) => (
-              <div key={modo} className="flex items-center gap-3 py-2.5 border-b border-line last:border-0">
-                <span className="text-[13px] text-ink w-32 shrink-0">{modo}</span>
-                <div className="bar-track flex-1">
-                  <div className="bar-fill" style={{ width: `${(n / porModo[0][1]) * 100}%` }} />
+          <Panel>
+            <Eyebrow>Por cuenta</Eyebrow>
+            <div className="mt-4">
+              {porCoach.slice(0, 12).map(([id, d]) => (
+                <div key={id} className="flex items-center justify-between py-2.5 border-b border-line last:border-0">
+                  <span className="text-[13px] text-ink truncate flex-1 mr-3">{nombre(id === 'null' ? null : id)}</span>
+                  {d.fail > 0 && <Chip tone="danger">{d.fail} fallos</Chip>}
+                  <span className="text-[12px] text-muted tabular-nums mx-3">{Math.round(d.chars / 3500)}k tok</span>
+                  <Num>{d.n}</Num>
                 </div>
-                <span className="stat-num text-[15px] w-10 text-right">{n}</span>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </Panel>
+
+          <Panel>
+            <Eyebrow>Por función</Eyebrow>
+            <div className="mt-4 space-y-3">
+              {porModo.map(([modo, n]) => (
+                <div key={modo}>
+                  <div className="flex items-baseline justify-between mb-1.5">
+                    <span className="text-[13px] text-ink">{modo}</span>
+                    <Num>{n}</Num>
+                  </div>
+                  <Bar pct={(n / porModo[0][1]) * 100} tone="volt" />
+                </div>
+              ))}
+            </div>
+          </Panel>
         </div>
       )}
 
-      <p className="text-[11px] text-faint mt-5 leading-relaxed">
-        El coste es una estimación a partir de los caracteres (≈3,5 por token) y de la tarifa
-        pública de Gemini Flash. Para la cifra real, mira la facturación de Google Cloud.
+      <p className="text-[11px] text-faint mt-5 leading-relaxed max-w-[640px]">
+        El coste es una estimación a partir de los caracteres (≈3,5 por token) y de la tarifa pública
+        de Gemini Flash. Para la cifra real, mira la facturación de Google Cloud.
       </p>
+    </>
+  )
+}
+
+// ════════════════════════════════════════════════════════════
+// ESTADO DEL SISTEMA
+// ════════════════════════════════════════════════════════════
+
+function Salud() {
+  const [checks, setChecks] = useState<HealthCheck[] | null>(null)
+  const [at, setAt] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  async function run() {
+    setLoading(true); setError('')
+    try {
+      const r = await getHealth()
+      setChecks(r.checks); setAt(r.at)
+    } catch (e) { setError(e instanceof Error ? e.message : 'Error') }
+    finally { setLoading(false) }
+  }
+  useEffect(() => { run() }, [])
+
+  const fallan = checks?.filter(c => !c.ok).length ?? 0
+
+  return (
+    <>
+      <PageTitle title="Estado del sistema"
+                 sub={at ? `Última comprobación: ${fechaHora(at)}` : 'Comprobando…'}
+                 action={<Btn onClick={run} disabled={loading}>{loading ? 'Comprobando…' : 'Comprobar ahora'}</Btn>} />
+
+      {error && <div className="mb-5"><Alert tone="danger">⚠ {error}</Alert></div>}
+
+      {checks && (
+        <>
+          <div className="mb-6">
+            <Alert tone={fallan ? 'danger' : 'ok'}>
+              {fallan
+                ? `${fallan} ${fallan === 1 ? 'comprobación falla' : 'comprobaciones fallan'}. Revísalas abajo.`
+                : 'Todos los sistemas funcionan correctamente.'}
+            </Alert>
+          </div>
+
+          <div className="space-y-2.5">
+            {checks.map(c => (
+              <Panel key={c.id} className="flex items-center gap-4">
+                <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${c.ok ? 'bg-volt' : 'bg-ink animate-pulse'}`} />
+                <div className="flex-1 min-w-0">
+                  <div className="text-[14px] text-ink font-medium">{c.label}</div>
+                  <div className="text-[12px] text-muted mt-0.5 truncate">{c.detail}</div>
+                </div>
+                <Chip tone={c.ok ? 'volt' : 'danger'}>{c.ok ? 'OK' : 'Fallo'}</Chip>
+              </Panel>
+            ))}
+          </div>
+        </>
+      )}
+    </>
+  )
+}
+
+// ════════════════════════════════════════════════════════════
+// ADMINISTRADORES
+// ════════════════════════════════════════════════════════════
+
+function Administradores({ meEmail }: { meEmail: string }) {
+  const [admins, setAdmins] = useState<AdminRow[]>([])
+  const [email, setEmail] = useState('')
+  const [busy, setBusy] = useState('')
+  const [error, setError] = useState('')
+  const [msg, setMsg] = useState('')
+
+  async function load() {
+    try { setAdmins(await listAdmins()) } catch (e) { setError(e instanceof Error ? e.message : 'Error') }
+  }
+  useEffect(() => { load() }, [])
+
+  async function add() {
+    if (!email.trim()) return
+    setBusy('add'); setError(''); setMsg('')
+    try { await addAdmin(email.trim()); setEmail(''); setMsg('Administrador añadido.'); load() }
+    catch (e) { setError(e instanceof Error ? e.message : 'Error') }
+    finally { setBusy('') }
+  }
+
+  async function quitar(a: AdminRow) {
+    setBusy(a.user_id); setError(''); setMsg('')
+    try { await removeAdmin(a.user_id, a.email); setMsg('Acceso retirado.'); load() }
+    catch (e) { setError(e instanceof Error ? e.message : 'Error') }
+    finally { setBusy('') }
+  }
+
+  return (
+    <>
+      <PageTitle title="Administradores" sub="Quién puede entrar en esta consola" />
+
+      {error && <div className="mb-4"><Alert tone="danger">⚠ {error}</Alert></div>}
+      {msg && <div className="mb-4"><Alert tone="ok">✓ {msg}</Alert></div>}
+
+      <Panel className="mb-6">
+        <Eyebrow>Dar acceso a alguien</Eyebrow>
+        <p className="text-[13px] text-muted mt-3 mb-4 leading-relaxed max-w-[560px]">
+          La persona tiene que estar registrada en CAMPO antes de poder hacerla administradora.
+          Tendrá los mismos permisos que tú: ver todas las cuentas, suspender, restablecer contraseñas y borrar.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <div className="flex-1"><SearchInput value={email} onChange={setEmail} placeholder="correo@ejemplo.com" /></div>
+          <Btn tone="volt" onClick={add} disabled={busy === 'add' || !email.trim()}>
+            {busy === 'add' ? 'Añadiendo…' : 'Añadir'}
+          </Btn>
+        </div>
+      </Panel>
+
+      <TableShell>
+        <Thead cols="2fr 1fr .6fr" labels={['Administrador', 'Desde', '']} />
+        {admins.map(a => (
+          <Row key={a.user_id} cols="2fr 1fr .6fr">
+            <Cell span>
+              <div className="flex items-center gap-3 min-w-0">
+                <Avatar name={a.email} />
+                <div className="min-w-0">
+                  <div className="text-[14px] text-ink truncate">{a.email}</div>
+                  {a.note && <div className="text-[12px] text-muted truncate">{a.note}</div>}
+                </div>
+              </div>
+            </Cell>
+            <Cell label="Desde"><span className="text-[13px] text-sub">{fecha(a.created_at)}</span></Cell>
+            <Cell>
+              {a.email.toLowerCase() === meEmail.toLowerCase()
+                ? <Chip tone="ghost">tú</Chip>
+                : <button onClick={() => quitar(a)} disabled={busy === a.user_id}
+                          className="text-[12px] text-faint hover:text-ink transition text-left">
+                    {busy === a.user_id ? '…' : 'Quitar acceso'}
+                  </button>}
+            </Cell>
+          </Row>
+        ))}
+        {!admins.length && <div className="p-10 text-center text-muted text-[14px]">Cargando…</div>}
+      </TableShell>
     </>
   )
 }
@@ -671,26 +800,27 @@ function ConsumoIA({ stats, users }: { stats: AdminStats; users: AdminUser[] }) 
 
 function Errores({ stats, users }: { stats: AdminStats; users: AdminUser[] }) {
   const nombre = (id: string | null) => users.find(x => x.user_id === id)?.email ?? '—'
-  if (!stats.recentErrors.length) return (
-    <div className="card p-12 text-center">
-      <p className="text-ink text-[15px] font-medium">Sin errores registrados</p>
-      <p className="text-muted text-[13px] mt-1.5">Buena señal.</p>
-    </div>
-  )
   return (
-    <div className="space-y-2.5">
-      {stats.recentErrors.map(e => (
-        <div key={e.id} className="card p-5">
-          <div className="flex items-start justify-between gap-4 mb-1.5">
-            <span className="chip">{e.context ?? 'sin contexto'}</span>
-            <span className="text-[11px] text-faint tnum shrink-0">{fechaHora(e.created_at)}</span>
-          </div>
-          <p className="text-[14px] text-ink">{e.message}</p>
-          {e.detail && <p className="text-[12px] text-muted mt-1.5 font-mono break-all line-clamp-3">{e.detail}</p>}
-          <p className="text-[11px] text-faint mt-2">{nombre(e.coach_id)}</p>
+    <>
+      <PageTitle title="Errores" sub={`${stats.totals.errors30} en los últimos 30 días`} />
+      {!stats.recentErrors.length ? (
+        <Empty title="Sin errores registrados" sub="Buena señal." />
+      ) : (
+        <div className="space-y-2.5">
+          {stats.recentErrors.map(e => (
+            <Panel key={e.id}>
+              <div className="flex items-start justify-between gap-4 mb-2">
+                <Chip tone="ghost">{e.context ?? 'sin contexto'}</Chip>
+                <span className="text-[11px] text-faint tabular-nums shrink-0">{fechaHora(e.created_at)}</span>
+              </div>
+              <p className="text-[14px] text-ink">{e.message}</p>
+              {e.detail && <p className="text-[12px] text-muted mt-2 font-mono break-all line-clamp-3">{e.detail}</p>}
+              <p className="text-[11px] text-faint mt-2">{nombre(e.coach_id)}</p>
+            </Panel>
+          ))}
         </div>
-      ))}
-    </div>
+      )}
+    </>
   )
 }
 
@@ -698,20 +828,25 @@ function Registro({ stats }: { stats: AdminStats }) {
   const ACCION: Record<string, string> = {
     suspend: 'Suspendió', activate: 'Reactivó', reset_password: 'Restableció contraseña',
     confirm_email: 'Confirmó correo', delete_user: 'Eliminó cuenta',
+    add_admin: 'Dio acceso de admin', remove_admin: 'Retiró acceso de admin',
   }
-  if (!stats.auditLog.length) return (
-    <div className="card p-12 text-center text-muted text-[14px]">Sin acciones registradas todavía.</div>
-  )
   return (
-    <div className="card overflow-hidden">
-      {stats.auditLog.map(a => (
-        <div key={a.id} className="flex items-center gap-4 px-6 py-3.5 border-b border-line last:border-0">
-          <span className="text-[13px] text-ink w-44 shrink-0">{ACCION[a.action] ?? a.action}</span>
-          <span className="text-[13px] text-sub flex-1 truncate">{a.target_email ?? '—'}</span>
-          {a.detail && <span className="text-[12px] text-muted truncate max-w-[200px]">{a.detail}</span>}
-          <span className="text-[11px] text-faint tnum shrink-0">{fechaHora(a.created_at)}</span>
-        </div>
-      ))}
-    </div>
+    <>
+      <PageTitle title="Registro de acciones" sub="Todo lo que se hace desde esta consola queda anotado" />
+      {!stats.auditLog.length ? (
+        <Empty title="Sin acciones registradas todavía" />
+      ) : (
+        <TableShell>
+          {stats.auditLog.map(a => (
+            <div key={a.id} className="flex items-center gap-4 px-6 py-3.5 border-b border-line last:border-0">
+              <span className="text-[13px] text-ink w-48 shrink-0">{ACCION[a.action] ?? a.action}</span>
+              <span className="text-[13px] text-sub flex-1 truncate">{a.target_email ?? '—'}</span>
+              {a.detail && <span className="text-[12px] text-faint truncate max-w-[200px] hidden sm:block">{a.detail}</span>}
+              <span className="text-[11px] text-faint tabular-nums shrink-0">{fechaHora(a.created_at)}</span>
+            </div>
+          ))}
+        </TableShell>
+      )}
+    </>
   )
 }

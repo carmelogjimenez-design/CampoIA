@@ -38,20 +38,23 @@ export default function CoachDashboard() {
   const coachId = data.coachId ?? ''
   const [unread, setUnread] = useState(0)
   const [isAdmin, setIsAdmin] = useState(false)
+  const [adminChecked, setAdminChecked] = useState(false)
+  const [showAdmin, setShowAdmin] = useState(false)
+  const [userEmail, setUserEmail] = useState('')
 
-  // El acceso de admin lo decide la tabla app_admins en servidor,
-  // no un email escrito aquí. Ocultar el menú es solo cosmético:
-  // la Edge Function vuelve a comprobarlo en cada acción.
+  // El acceso de admin lo decide la tabla app_admins en servidor, no un email
+  // escrito aquí: la Edge Function vuelve a comprobarlo en cada acción.
+  // Un admin entra directo en su consola; puede saltar al panel de coach
+  // si además entrena a alguien.
   useEffect(() => {
     checkIsAdmin().then(ok => {
       setIsAdmin(ok)
-      // Un admin sin jugadores no es coach de nadie: le llevamos a su panel
-      // en vez de a la pantalla de "añade tu primer jugador".
-      if (ok && !data.loading && data.players.length === 0) setView('admin')
+      setShowAdmin(ok)
+      setAdminChecked(true)
     })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    supabase.auth.getUser().then(({ data: d }) => setUserEmail(d.user?.email ?? ''))
     touchLastSeen()
-  }, [data.loading])
+  }, [])
 
   // Un admin sin jugadores no está entrenando a nadie: la app es, para él,
   // una herramienta de administración. Sistema arriba y las secciones de
@@ -74,11 +77,9 @@ export default function CoachDashboard() {
   function render() {
     if (data.loading) return <LoadingScreen />
     if (data.error) return <ErrorState message={data.error} onRetry={data.reload} />
-    // Onboarding: sin jugadores, invita a crear el primero (salvo en vistas donde no aplica)
-    // El panel de superadmin no necesita jugadores: no lo tapamos con el onboarding.
-    // Para un admin sin jugadores, el Dashboard ES el panel de control.
-    if (adminOnly && (view === 'dashboard' || view === 'admin')) return <AdminPanel />
-    if (!data.players.length && !['players', 'admin'].includes(view)) return <FirstRun onAdd={() => setView('players')} isAdmin={isAdmin} onAdmin={() => setView('admin')} />
+    // Onboarding: sin jugadores, invita a crear el primero
+    if (!data.players.length && view !== 'players')
+      return <FirstRun onAdd={() => setView('players')} isAdmin={isAdmin} onAdmin={() => setShowAdmin(true)} />
     switch (view) {
       case 'dashboard': return <DashboardHome data={data} onGo={setView} />
       case 'players': return <PlayersView />
@@ -98,6 +99,16 @@ export default function CoachDashboard() {
   }
 
   function go(id: string) { setView(id); setMenuOpen(false) }
+
+  // Mientras comprobamos si eres admin no pintamos nada: evita ver el panel
+  // de coach medio segundo antes de que salte la consola.
+  if (!adminChecked) return <LoadingScreen />
+
+  // La consola de administración sustituye a la app entera, no es una vista más.
+  if (showAdmin && isAdmin) return (
+    <AdminPanel email={userEmail} hasCoachData={data.players.length > 0}
+                onExit={() => setShowAdmin(false)} onSignOut={signOut} />
+  )
 
   return (
     <div className="min-h-screen bg-canvas lg:flex">
@@ -150,7 +161,14 @@ export default function CoachDashboard() {
             </div>
           ))}
         </nav>
-        <div className="mt-2">
+        <div className="mt-2 space-y-2">
+          {isAdmin && (
+            <button onClick={() => setShowAdmin(true)}
+                    className="w-full flex items-center justify-center gap-2 bg-ink text-paper rounded-xl py-2.5 text-[13px] font-medium hover:opacity-90 transition">
+              <span className="w-1.5 h-1.5 rounded-full bg-volt" />
+              Consola de admin
+            </button>
+          )}
           <button onClick={signOut} className="w-full flex items-center justify-center gap-2 border border-line rounded-xl py-2.5 text-[13px] font-medium text-sub hover:bg-canvas hover:text-ink transition">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
             Cerrar sesión

@@ -82,6 +82,9 @@ export interface CoachDetail {
   sessions: { date: string | null; completed: boolean }[]
 }
 
+export interface HealthCheck { id: string; label: string; ok: boolean; detail: string }
+export interface AdminRow { user_id: string; email: string; created_at: string; note: string | null }
+
 export interface AdminStats {
   totals: {
     coaches: number; suspended: number; players: number; matches: number
@@ -150,6 +153,10 @@ export const listUsers = () => callAdmin<{ users: AdminUser[] }>('list_users').t
 export const getStats = () => callAdmin<AdminStats>('stats')
 export const listPlayers = () => callAdmin<{ players: AdminPlayer[] }>('list_players').then(r => r.players)
 export const getCoachDetail = (user_id: string) => callAdmin<CoachDetail>('coach_detail', { user_id })
+export const getHealth = () => callAdmin<{ checks: HealthCheck[]; at: string }>('health')
+export const listAdmins = () => callAdmin<{ admins: AdminRow[] }>('list_admins').then(r => r.admins)
+export const addAdmin = (email: string, note?: string) => callAdmin('add_admin', { email, note })
+export const removeAdmin = (user_id: string, email: string) => callAdmin('remove_admin', { user_id, email })
 export const suspendUser = (user_id: string, email: string, reason?: string) =>
   callAdmin('suspend', { user_id, email, reason })
 export const activateUser = (user_id: string, email: string) =>
