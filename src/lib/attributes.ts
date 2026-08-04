@@ -23,6 +23,17 @@ export interface AttributeSet {
 
 const META_KEY = '_meta'
 
+/** Quita tildes y mayúsculas para comparar claves. */
+const fold = (s: string) =>
+  s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
+
+/** Devuelve la forma canónica ("fisico" → "Físico"); si no la reconoce, la deja igual. */
+export function canonKey(k: string): string {
+  const f = fold(k)
+  const hit = ATTR_KEYS.find(a => fold(a) === f)
+  return hit ?? k
+}
+
 /** Lee los atributos reales del jugador. Si no hay, `rated` es false: NO inventamos nada. */
 export function getAttributes(player: Player | null | undefined): AttributeSet {
   const raw = player?.ai_attributes
@@ -33,11 +44,17 @@ export function getAttributes(player: Player | null | undefined): AttributeSet {
   const meta = (raw as Record<string, unknown>)[META_KEY] as
     { source?: AttrSource; at?: string } | undefined
 
+  // Las claves llegan a veces sin tilde ("Fisico" vs "Físico") según las
+  // escriba la IA o el coach, y el radar acababa pintando la misma faceta
+  // dos veces. Aquí las unificamos a la forma canónica.
   const values: Record<string, number> = {}
   for (const [k, v] of Object.entries(raw)) {
     if (k === META_KEY) continue
     const n = Number(v)
-    if (Number.isFinite(n)) values[k] = Math.round(n)
+    if (!Number.isFinite(n)) continue
+    const canon = canonKey(k)
+    // Si ya existe, nos quedamos con el valor más reciente (el último leído)
+    values[canon] = Math.round(n)
   }
 
   if (!Object.keys(values).length) {

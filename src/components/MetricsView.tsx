@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { Player, TrainingSession, Match } from '../types/database'
 import { isGoalkeeper, initials } from '../lib/players'
-import { getAttributes } from '../lib/attributes'
+import { getAttributes, ATTR_KEYS } from '../lib/attributes'
+import ProgressView from './ProgressView'
 
 interface Props { players: Player[]; training: TrainingSession[]; matches: Match[] }
 
 export default function MetricsView({ players, training, matches }: Props) {
   const [radarPlayer, setRadarPlayer] = useState(players[0]?.id ?? '')
+  const [tab, setTab] = useState<'ahora' | 'progreso'>('ahora')
   if (!players.length) return <Empty />
 
   const stat = (p: Player) => {
@@ -35,11 +37,29 @@ export default function MetricsView({ players, training, matches }: Props) {
 
   const radar = all.find(x => x.p.id === radarPlayer)?.p
   const radarSet = getAttributes(radar)
-  const attrs: Record<string, number> = radarSet.values
+  // Solo las facetas canónicas y en orden fijo: antes se colaban duplicados
+  // ("Fisico" y "Físico") y el radar pintaba ocho vértices con seis datos.
+  const attrs: Record<string, number> = Object.fromEntries(
+    ATTR_KEYS.filter(k => k in radarSet.values).map(k => [k, radarSet.values[k]]),
+  )
 
   return (
     <div className="animate-[fadeIn_.4s_ease]">
-      <header className="mb-7"><div className="eyebrow mb-2">Rendimiento</div><h1 className="h-page text-[26px] sm:text-[40px] leading-none">Métricas</h1></header>
+      <header className="mb-6"><div className="eyebrow mb-2">Rendimiento</div><h1 className="h-page text-[26px] sm:text-[40px] leading-none">Métricas</h1></header>
+
+      <div className="grid grid-cols-2 gap-1.5 bg-canvas rounded-xl p-1.5 mb-7 max-w-[420px]">
+        {([['ahora', 'Situación actual'], ['progreso', 'Progresión']] as const).map(([id, l]) => (
+          <button key={id} onClick={() => setTab(id)}
+                  className={`py-2.5 rounded-[9px] text-[14px] font-medium transition ${
+                    tab === id ? 'bg-paper text-ink shadow-apple' : 'text-muted hover:text-ink'}`}>
+            {l}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'progreso' && <ProgressView players={players} />}
+
+      {tab === 'ahora' && <>
 
       {/* KPIs del equipo */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -112,6 +132,8 @@ export default function MetricsView({ players, training, matches }: Props) {
           ))}
         </div>
       </div>
+
+      </>}
     </div>
   )
 }

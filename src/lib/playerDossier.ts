@@ -15,6 +15,7 @@ import { isGoalkeeper } from './players'
 import { getAttributes, SOURCE_LABEL } from './attributes'
 import { rangeAdherence } from './mealPlan'
 import { matchSeason, seasonsIn, seasonTitle } from './seasons'
+import { buildProgreso, calcDelta } from './progress'
 
 const avg = (xs: number[]) => xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null
 const r1 = (n: number | null) => n === null ? null : Math.round(n * 10) / 10
@@ -241,6 +242,21 @@ export async function buildPlayerDossier(player: Player): Promise<string> {
   } else {
     L.push(`\nTESTS FÍSICOS: ninguno realizado.`)
   }
+
+  // ── Progresión: lo que ha cambiado en el último mes ──
+  try {
+    const prog = await buildProgreso(player, 30)
+    const comparables = [...prog.compromiso, ...prog.competicion, ...prog.bienestar]
+      .filter(d => d.antes !== null && d.ahora !== null)
+    if (comparables.length >= 3) {
+      L.push(`\nPROGRESIÓN (últimos 30 días frente a los 30 anteriores):`)
+      for (const d of comparables) {
+        const c = calcDelta(d)
+        const flecha = c.mejora === true ? 'mejora' : c.mejora === false ? 'empeora' : 'igual'
+        L.push(`- ${d.label}: ${d.antes}${d.unit} → ${d.ahora}${d.unit} (${flecha})`)
+      }
+    }
+  } catch { /* si falla, el dossier sigue siendo válido sin esta sección */ }
 
   L.push(`\nUsa SOLO estos datos. Si algo no aparece arriba, di que falta ese dato en vez de suponerlo.`)
   return L.join('\n')
