@@ -4,6 +4,7 @@ import { Player } from '../types/database'
 import { useAuth } from '../context/AuthContext'
 import { posLabel } from '../lib/positions'
 import { buildPlayerDossier } from '../lib/playerDossier'
+import { logAiUsage } from '../lib/admin'
 import ExportPlanModal, { parsePlan, ParsedPlan } from './ExportPlanModal'
 import { generateDietPDF } from '../lib/dietPdf'
 import { parseDietPlan, saveMealPlan } from '../lib/mealPlan'
@@ -47,22 +48,39 @@ export default function AICoachView({ players }: Props) {
     } catch { return fichaBasica(p) }
   }
 
+  // Esta vista tenía su propio fetch y por eso su consumo no se contabilizaba.
+  // Ahora registra igual que el resto: duración, tamaño y si fue bien.
   async function callAI(q: string, ctx: string, conv: Msg[]): Promise<string> {
     const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/hyper-api`
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session?.access_token ?? import.meta.env.VITE_SUPABASE_KEY}`,
-        'apikey': import.meta.env.VITE_SUPABASE_KEY,
-      },
-      body: JSON.stringify({ mode: 'chat', question: q, playerContext: ctx, coachName: 'el coach', conversation: conv.map(m => ({ role: m.role, content: m.text })) }),
-    })
-    const json = await res.json()
-    if (json.error) throw new Error(json.error)
-    if (!res.ok) throw new Error(`Error ${res.status}`)
-    if (!json.text) throw new Error('La IA respondió vacío' + (json.finishReason ? ` (${json.finishReason})` : ''))
-    return json.text
+    const t0 = Date.now()
+    const promptChars = q.length + ctx.length
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token ?? import.meta.env.VITE_SUPABASE_KEY}`,
+          'apikey': import.meta.env.VITE_SUPABASE_KEY,
+        },
+        body: JSON.stringify({ mode: 'chat', question: q, playerContext: ctx, coachName: 'el coach', conversation: conv.map(m => ({ role: m.role, content: m.text })) }),
+      })
+      const json = await res.json()
+      if (json.error) throw new Error(json.error)
+      if (!res.ok) throw new Error(`Error ${res.status}`)
+      if (!json.text) throw new Error('La IA respondió vacío' + (json.finishReason ? ` (${json.finishReason})` : ''))
+
+      logAiUsage({
+        mode: 'chat', promptChars, outputChars: json.text.length,
+        ok: true, ms: Date.now() - t0, playerId: player?.id,
+      })
+      return json.text
+    } catch (e) {
+      logAiUsage({
+        mode: 'chat', promptChars, outputChars: 0, ok: false,
+        error: e instanceof Error ? e.message : 'error', ms: Date.now() - t0, playerId: player?.id,
+      })
+      throw e
+    }
   }
 
   async function ask() {

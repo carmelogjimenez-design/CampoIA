@@ -179,14 +179,20 @@ export async function logAiUsage(row: {
 }) {
   try {
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-    await supabase.from('ai_usage').insert({
+    if (!user) { console.warn('[CAMPO] Sin sesión: no se registra el uso de IA.'); return }
+
+    const { error } = await supabase.from('ai_usage').insert({
       coach_id: user.id, player_id: row.playerId ?? null,
       mode: row.mode, model: row.model ?? 'gemini-3.6-flash',
       prompt_chars: row.promptChars, output_chars: row.outputChars,
       ok: row.ok, error: row.error ?? null, ms: row.ms,
     })
-  } catch { /* la telemetría nunca debe estorbar */ }
+    // La telemetría no debe romper la app, pero callarse del todo hace
+    // imposible saber por qué el panel sale vacío. Lo dejamos en consola.
+    if (error) console.warn('[CAMPO] No se pudo registrar el uso de IA:', error.message)
+  } catch (e) {
+    console.warn('[CAMPO] Error al registrar uso de IA:', e)
+  }
 }
 
 /** Registra un error para que aparezca en el panel. */
